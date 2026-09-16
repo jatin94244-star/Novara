@@ -686,3 +686,414 @@ button,input{font:inherit}button{cursor:pointer}button:disabled{cursor:not-allow
     flex-direction: column;
   }
 }
+/* =========================================================
+   NOVARA TUTOR — RESPONSIVE MOBILE FIX
+   ========================================================= */
+
+/* Tutor desktop layout */
+.tutor-page {
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.tutor-page *,
+.tutor-page *::before,
+.tutor-page *::after {
+  box-sizing: border-box;
+}
+
+.tutor-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+  width: 100%;
+  min-width: 0;
+}
+
+.tutor-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 18px;
+  align-items: start;
+  width: 100%;
+  min-width: 0;
+}
+
+.tutor-chat-card {
+  min-width: 0;
+  width: 100%;
+}
+
+.tutor-chat-header {
+  padding: 18px 20px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.tutor-avatar {
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg,#7c5cff,#4f46e5);
+  font-size: 20px;
+}
+
+.tutor-chat-title {
+  min-width: 0;
+}
+
+.tutor-chat-title strong {
+  display: block;
+}
+
+.tutor-chat-title div {
+  font-size: 12px;
+  opacity: .5;
+  margin-top: 2px;
+}
+
+.tutor-messages {
+  height: 480px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.tutor-message-row {
+  display: flex;
+  justify-content: flex-start;
+  min-width: 0;
+}
+
+.user-message-row {
+  justify-content: flex-end;
+}
+
+.tutor-message {
+  max-width: 78%;
+  min-width: 0;
+  padding: 13px 15px;
+  border-radius: 16px 16px 16px 4px;
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.07);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.user-message-row .tutor-message {
+  border-radius: 16px 16px 4px 16px;
+  background: rgba(124,92,255,.18);
+}
+
+.tutor-message-text {
+  font-size: 14px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.tutor-japanese {
+  margin-top: 12px;
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(0,0,0,.18);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.tutor-japanese span {
+  flex: 1;
+  min-width: 0;
+  font-size: 18px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.tutor-speak-button {
+  flex-shrink: 0;
+  padding: 8px 10px !important;
+}
+
+.tutor-thinking {
+  padding: 13px 17px;
+  border-radius: 16px 16px 16px 4px;
+  background: rgba(255,255,255,.05);
+  display: flex;
+  gap: 4px;
+}
+
+.tutor-thinking span {
+  opacity: .45;
+}
+
+.tutor-suggestions {
+  padding: 0 18px 12px;
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  min-width: 0;
+}
+
+.tutor-suggestions::-webkit-scrollbar {
+  display: none;
+}
+
+.tutor-suggestions .secondary-button {
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-size: 12px;
+}
+
+.tutor-input-area {
+  padding: 12px 18px 18px;
+  display: flex;
+  gap: 10px;
+  min-width: 0;
+}
+
+.tutor-input-area textarea {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  resize: none;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.1);
+  background: rgba(255,255,255,.04);
+  color: inherit;
+  outline: none;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.tutor-input-area textarea:focus {
+  border-color: rgba(124,92,255,.65);
+}
+
+.tutor-input-area .primary-button {
+  flex-shrink: 0;
+}
+
+.tutor-sidebar {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  width: 100%;
+}
+
+.tutor-sidebar .question-card {
+  min-width: 0;
+  width: 100%;
+}
+
+.tutor-muted {
+  opacity: .55;
+  font-size: 13px;
+}
+
+.tutor-xp-box {
+  margin-top: 15px;
+  padding: 12px;
+  border-radius: 10px;
+  background: rgba(124,92,255,.08);
+}
+
+.tutor-xp-box div {
+  font-size: 12px;
+  opacity: .55;
+  margin-top: 3px;
+}
+
+.tutor-hint {
+  padding: 12px;
+  border-radius: 10px;
+  background: rgba(255,255,255,.04);
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.quick-lesson-list {
+  display: grid;
+  gap: 9px;
+  margin-top: 15px;
+}
+
+.quick-lesson-button {
+  text-align: left;
+  padding: 11px !important;
+  width: 100%;
+}
+
+.quick-lesson-button strong {
+  display: block;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.quick-lesson-button small {
+  display: block;
+  opacity: .5;
+  margin-top: 3px;
+  line-height: 1.4;
+}
+
+.tutor-footer-tip {
+  margin-top: 20px;
+}
+
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (max-width: 900px) {
+
+  .tutor-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .tutor-sidebar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 700px) {
+
+  .tutor-page {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  .tutor-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tutor-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .tutor-sidebar {
+    grid-template-columns: 1fr;
+  }
+
+  .tutor-chat-header {
+    padding: 15px;
+  }
+
+  .tutor-messages {
+    height: 420px;
+    padding: 15px;
+  }
+
+  .tutor-message {
+    max-width: 88%;
+  }
+
+  .tutor-suggestions {
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+
+  .tutor-input-area {
+    padding: 10px 15px 15px;
+  }
+
+}
+
+
+/* =========================================================
+   SMALL PHONES
+   ========================================================= */
+
+@media (max-width: 480px) {
+
+  .tutor-stats {
+    gap: 8px;
+  }
+
+  .tutor-stats .result-card {
+    padding: 15px;
+  }
+
+  .tutor-stats .result-card strong {
+    font-size: 22px;
+  }
+
+  .tutor-stats .result-card span {
+    font-size: 11px;
+  }
+
+  .tutor-messages {
+    height: 390px;
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .tutor-message {
+    max-width: 94%;
+    padding: 11px 12px;
+  }
+
+  .tutor-message-text {
+    font-size: 14px;
+  }
+
+  .tutor-japanese {
+    padding: 9px;
+    gap: 7px;
+  }
+
+  .tutor-japanese span {
+    font-size: 16px;
+  }
+
+  .tutor-input-area {
+    align-items: stretch;
+    gap: 7px;
+  }
+
+  .tutor-input-area textarea {
+    font-size: 14px;
+    padding: 11px;
+  }
+
+  .tutor-input-area .primary-button {
+    padding: 10px 12px;
+  }
+
+  .tutor-chat-title div {
+    font-size: 10px;
+  }
+
+  .tutor-avatar {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    font-size: 18px;
+  }
+
+}

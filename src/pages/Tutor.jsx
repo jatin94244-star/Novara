@@ -48,8 +48,7 @@ function speakJapanese(text) {
 
   window.speechSynthesis.cancel();
 
-  const speech =
-    new SpeechSynthesisUtterance(text);
+  const speech = new SpeechSynthesisUtterance(text);
 
   speech.lang = "ja-JP";
   speech.rate = 0.8;
@@ -67,8 +66,7 @@ function generateTutorReply(message) {
     return {
       text:
         "Great choice! In Japanese, a simple self-introduction is 「わたしは ___ です。」. For example: 「わたしは Jatin です。」 means 'I am Jatin.'",
-      japanese:
-        "わたしは Jatin です。",
+      japanese: "わたしは Jatin です。",
     };
   }
 
@@ -79,8 +77,7 @@ function generateTutorReply(message) {
     return {
       text:
         "For a basic greeting, use 「こんにちは」. It means 'Hello'. Try saying it out loud!",
-      japanese:
-        "こんにちは",
+      japanese: "こんにちは",
     };
   }
 
@@ -92,8 +89,7 @@ function generateTutorReply(message) {
     return {
       text:
         "At a café or restaurant, 「これをください」 is useful. It means 'This one, please.'",
-      japanese:
-        "これをください。",
+      japanese: "これをください。",
     };
   }
 
@@ -104,27 +100,22 @@ function generateTutorReply(message) {
     return {
       text:
         "Let's practice! Imagine you just met someone in Japan. Start with 「こんにちは」 and then introduce yourself.",
-      japanese:
-        "こんにちは。わたしは ___ です。",
+      japanese: "こんにちは。わたしは ___ です。",
     };
   }
 
-  if (
-    text.includes("thank")
-  ) {
+  if (text.includes("thank")) {
     return {
       text:
         "「ありがとう」 means 'Thank you'. A more polite version is 「ありがとうございます」.",
-      japanese:
-        "ありがとうございます。",
+      japanese: "ありがとうございます。",
     };
   }
 
   return {
     text:
       "Nice! Let's keep practicing. Try asking me about greetings, introductions, food, travel, or Japanese conversation.",
-    japanese:
-      "がんばりましょう！",
+    japanese: "がんばりましょう！",
   };
 }
 
@@ -183,7 +174,10 @@ export default function Tutor({ state }) {
       ]);
 
       setIsThinking(false);
-      setXp((previous) => previous + 5);
+
+      setXp(
+        (previous) => previous + 5
+      );
     }, 700);
   }
 
@@ -197,12 +191,15 @@ export default function Tutor({ state }) {
     }
   }
 
+  const userMessageCount =
+    messages.filter(
+      (item) => item.role === "user"
+    ).length;
+
   return (
     <section className="page tutor-page">
 
-      {/* =================================
-          HEADER
-      ================================= */}
+      {/* HEADER */}
 
       <div className="page-header">
 
@@ -228,19 +225,9 @@ export default function Tutor({ state }) {
       </div>
 
 
-      {/* =================================
-          TUTOR STATS
-      ================================= */}
+      {/* STATS */}
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns:
-            "repeat(auto-fit, minmax(160px, 1fr))",
-          gap: "12px",
-          marginBottom: "18px",
-        }}
-      >
+      <div className="tutor-stats">
 
         <div className="result-card">
           <strong>AI</strong>
@@ -248,18 +235,13 @@ export default function Tutor({ state }) {
         </div>
 
         <div className="result-card">
-          <strong>
-            {xp}
-          </strong>
+          <strong>{xp}</strong>
           <span>Session XP</span>
         </div>
 
         <div className="result-card">
           <strong>
-            {messages.filter(
-              (item) =>
-                item.role === "user"
-            ).length}
+            {userMessageCount}
           </strong>
           <span>Your Messages</span>
         </div>
@@ -274,74 +256,38 @@ export default function Tutor({ state }) {
       </div>
 
 
-      {/* =================================
-          TUTOR LAYOUT
-      ================================= */}
+      {/* MAIN TUTOR LAYOUT */}
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns:
-            "minmax(0, 1fr) 280px",
-          gap: "18px",
-          alignItems: "start",
-        }}
-      >
+      <div className="tutor-layout">
 
-        {/* =================================
-            CHAT
-        ================================= */}
+        {/* CHAT */}
 
         <div
-          className="question-card"
+          className="question-card tutor-chat-card"
           style={{
-            padding: "0",
+            padding: 0,
             overflow: "hidden",
           }}
         >
 
           {/* CHAT HEADER */}
 
-          <div
-            style={{
-              padding: "18px 20px",
-              borderBottom:
-                "1px solid rgba(255,255,255,.08)",
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-            }}
-          >
+          <div className="tutor-chat-header">
 
-            <div
-              style={{
-                width: "42px",
-                height: "42px",
-                borderRadius: "50%",
-                display: "grid",
-                placeItems: "center",
-                background:
-                  "linear-gradient(135deg,#7c5cff,#4f46e5)",
-                fontSize: "20px",
-              }}
-            >
+            <div className="tutor-avatar">
               🤖
             </div>
 
-            <div>
+            <div className="tutor-chat-title">
+
               <strong>
                 Novara Sensei
               </strong>
 
-              <div
-                style={{
-                  fontSize: "12px",
-                  opacity: 0.5,
-                  marginTop: "2px",
-                }}
-              >
+              <div>
                 ● Online • Japanese Coach
               </div>
+
             </div>
 
           </div>
@@ -349,87 +295,42 @@ export default function Tutor({ state }) {
 
           {/* MESSAGES */}
 
-          <div
-            style={{
-              height: "480px",
-              overflowY: "auto",
-              padding: "20px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "14px",
-            }}
-          >
+          <div className="tutor-messages">
 
             {messages.map((message) => (
 
               <div
                 key={message.id}
-                style={{
-                  display: "flex",
-                  justifyContent:
-                    message.role === "user"
-                      ? "flex-end"
-                      : "flex-start",
-                }}
+                className={
+                  message.role === "user"
+                    ? "tutor-message-row user-message-row"
+                    : "tutor-message-row"
+                }
               >
 
-                <div
-                  style={{
-                    maxWidth: "78%",
-                    padding: "13px 15px",
-                    borderRadius:
-                      message.role === "user"
-                        ? "16px 16px 4px 16px"
-                        : "16px 16px 16px 4px",
-                    background:
-                      message.role === "user"
-                        ? "rgba(124,92,255,.18)"
-                        : "rgba(255,255,255,.05)",
-                    border:
-                      "1px solid rgba(255,255,255,.07)",
-                  }}
-                >
+                <div className="tutor-message">
 
-                  <div
-                    style={{
-                      fontSize: "14px",
-                      lineHeight: 1.6,
-                    }}
-                  >
+                  <div className="tutor-message-text">
                     {message.text}
                   </div>
 
                   {message.japanese && (
 
-                    <div
-                      style={{
-                        marginTop: "12px",
-                        padding: "10px",
-                        borderRadius: "10px",
-                        background:
-                          "rgba(0,0,0,.18)",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "10px",
-                      }}
-                    >
+                    <div className="tutor-japanese">
 
-                      <span
-                        style={{
-                          fontSize: "18px",
-                          flex: 1,
-                        }}
-                      >
+                      <span>
                         {message.japanese}
                       </span>
 
                       <button
-                        className="secondary-button"
+                        className="secondary-button tutor-speak-button"
                         onClick={() =>
                           speakJapanese(
                             message.japanese
                           )
                         }
+                        aria-label="Listen to Japanese pronunciation"
+                        title="Listen"
                       >
                         🔊
                       </button>
@@ -445,28 +346,16 @@ export default function Tutor({ state }) {
             ))}
 
 
+            {/* THINKING */}
+
             {isThinking && (
 
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent:
-                    "flex-start",
-                }}
-              >
+              <div className="tutor-message-row">
 
-                <div
-                  style={{
-                    padding: "13px 17px",
-                    borderRadius:
-                      "16px 16px 16px 4px",
-                    background:
-                      "rgba(255,255,255,.05)",
-                  }}
-                >
-                  <span>
-                    ● ● ●
-                  </span>
+                <div className="tutor-thinking">
+                  <span>●</span>
+                  <span>●</span>
+                  <span>●</span>
                 </div>
 
               </div>
@@ -478,15 +367,7 @@ export default function Tutor({ state }) {
 
           {/* SUGGESTIONS */}
 
-          <div
-            style={{
-              padding:
-                "0 18px 12px",
-              display: "flex",
-              gap: "7px",
-              overflowX: "auto",
-            }}
-          >
+          <div className="tutor-suggestions">
 
             {suggestions.map(
               (suggestion) => (
@@ -499,11 +380,6 @@ export default function Tutor({ state }) {
                       suggestion
                     )
                   }
-                  style={{
-                    whiteSpace:
-                      "nowrap",
-                    fontSize: "12px",
-                  }}
                 >
                   {suggestion}
                 </button>
@@ -516,36 +392,19 @@ export default function Tutor({ state }) {
 
           {/* INPUT */}
 
-          <div
-            style={{
-              padding: "12px 18px 18px",
-              display: "flex",
-              gap: "10px",
-            }}
-          >
+          <div className="tutor-input-area">
 
             <textarea
               value={input}
               onChange={(event) =>
-                setInput(event.target.value)
+                setInput(
+                  event.target.value
+                )
               }
               onKeyDown={handleKeyDown}
               placeholder="Ask your Japanese tutor..."
               rows="1"
-              style={{
-                flex: 1,
-                resize: "none",
-                padding: "14px",
-                borderRadius: "12px",
-                border:
-                  "1px solid rgba(255,255,255,.1)",
-                background:
-                  "rgba(255,255,255,.04)",
-                color: "inherit",
-                outline: "none",
-                fontFamily:
-                  "inherit",
-              }}
+              aria-label="Ask your Japanese tutor"
             />
 
             <button
@@ -566,16 +425,9 @@ export default function Tutor({ state }) {
         </div>
 
 
-        {/* =================================
-            SIDEBAR
-        ================================= */}
+        {/* RIGHT SIDE */}
 
-        <div
-          style={{
-            display: "grid",
-            gap: "14px",
-          }}
-        >
+        <div className="tutor-sidebar">
 
           {/* AI MODE */}
 
@@ -589,37 +441,18 @@ export default function Tutor({ state }) {
               Conversation
             </h2>
 
-            <p
-              style={{
-                opacity: 0.55,
-                fontSize: "13px",
-              }}
-            >
+            <p className="tutor-muted">
               Ask questions naturally and
               practice Japanese.
             </p>
 
-            <div
-              style={{
-                marginTop: "15px",
-                padding: "12px",
-                borderRadius: "10px",
-                background:
-                  "rgba(124,92,255,.08)",
-              }}
-            >
+            <div className="tutor-xp-box">
 
               <strong>
                 ✦ +5 XP
               </strong>
 
-              <div
-                style={{
-                  fontSize: "12px",
-                  opacity: 0.55,
-                  marginTop: "3px",
-                }}
-              >
+              <div>
                 per tutor interaction
               </div>
 
@@ -653,22 +486,16 @@ export default function Tutor({ state }) {
 
             ) : (
 
-              <div
-                style={{
-                  padding: "12px",
-                  borderRadius: "10px",
-                  background:
-                    "rgba(255,255,255,.04)",
-                  fontSize: "13px",
-                  lineHeight: 1.6,
-                }}
-              >
+              <div className="tutor-hint">
+
                 Try asking:
                 <br />
+
                 <strong>
                   "How do I introduce myself
                   in Japanese?"
                 </strong>
+
               </div>
 
             )}
@@ -676,7 +503,7 @@ export default function Tutor({ state }) {
           </div>
 
 
-          {/* MINI LESSONS */}
+          {/* QUICK PRACTICE */}
 
           <div className="question-card">
 
@@ -688,44 +515,26 @@ export default function Tutor({ state }) {
               Useful Phrases
             </h2>
 
-            <div
-              style={{
-                display: "grid",
-                gap: "9px",
-                marginTop: "15px",
-              }}
-            >
+            <div className="quick-lesson-list">
 
               {quickLessons.map(
                 (lesson) => (
 
                   <button
                     key={lesson.title}
-                    className="secondary-button"
+                    className="secondary-button quick-lesson-button"
                     onClick={() =>
                       sendMessage(
                         `Teach me ${lesson.title}`
                       )
                     }
-                    style={{
-                      textAlign: "left",
-                      padding: "11px",
-                    }}
                   >
 
-                    <strong
-                      style={{
-                        display: "block",
-                      }}
-                    >
+                    <strong>
                       {lesson.japanese}
                     </strong>
 
-                    <small
-                      style={{
-                        opacity: 0.5,
-                      }}
-                    >
+                    <small>
                       {lesson.meaning}
                     </small>
 
@@ -743,16 +552,9 @@ export default function Tutor({ state }) {
       </div>
 
 
-      {/* =================================
-          FOOTER TIP
-      ================================= */}
+      {/* FOOTER TIP */}
 
-      <div
-        className="path-tip"
-        style={{
-          marginTop: "20px",
-        }}
-      >
+      <div className="path-tip tutor-footer-tip">
 
         <span>🧠</span>
 

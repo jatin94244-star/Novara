@@ -11,7 +11,7 @@ import Conversation from "./pages/Conversation";
 import Vocabulary from "./pages/Vocabulary";
 import Analytics from "./pages/Analytics";
 import SimplePage from "./pages/SimplePage";
-
+import Grammar from "./pages/Grammar";
 import { useNovaraStore } from "./store/useNovaraStore";
 
 export default function App() {
@@ -64,7 +64,8 @@ export default function App() {
 
       case "tutor":
         return <Tutor state={state} />;
-
+case "grammar":
+  return <Grammar />;
       case "conversation":
         return <Conversation />;
 
