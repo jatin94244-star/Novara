@@ -61,7 +61,7 @@ export default async function handler(req, res) {
                 item.role === "assistant") &&
               typeof item.content === "string"
           )
-          .slice(-12)
+          .slice(-10)
           .map((item) => ({
             role: item.role,
             content: item.content,
@@ -77,270 +77,194 @@ export default async function handler(req, res) {
 
     /*
     =====================================================
-    CONVERSATION MODE
+    CONVERSATION PROMPT
     =====================================================
     */
 
-    const conversationRules = `
+    const conversationPrompt = `
 You are NOVARA, an advanced Japanese conversation partner.
+
+The learner is practicing Japanese.
 
 SCENARIO:
 ${scenario}
 
-The learner is practicing Japanese conversation.
+USER MESSAGE:
+${message}
 
-IMPORTANT RULES:
+IMPORTANT CONVERSATION RULES:
 
-1. ALWAYS continue the conversation naturally.
+1. Understand the user's meaning even if they write:
+   - English
+   - Hindi
+   - Hinglish
+   - Japanese
+   - mixed language
 
-2. If the learner says something in English or Hindi,
-understand what they mean and respond naturally in Japanese.
+2. Your "reply" MUST be a NEW natural Japanese response.
 
-3. NEVER simply repeat the learner's sentence.
+3. NEVER simply repeat the user's message.
 
-4. NEVER respond with only a correction.
+4. NEVER make "reply" just a correction.
 
-5. Your "reply" MUST be a NEW Japanese conversational response.
+5. NEVER say "もう一度言ってみてください" unless
+the user's message is genuinely impossible to understand.
 
-6. Your "english" MUST explain/translate YOUR Japanese reply.
+6. Continue the current conversation naturally.
 
-7. If the learner's Japanese has a mistake:
-   - You may briefly mention the correction.
-   - But still continue the conversation.
-   - Do not let the correction replace the conversation.
+7. If the user asks something like:
+   "how to order food in a restaurant or cafe"
 
-8. Ask a natural follow-up question when appropriate.
+   respond in Japanese with useful examples.
 
-9. Remember the previous messages.
+8. If the user makes a Japanese mistake:
+   continue the conversation first, and put a short correction
+   in the "correction" field.
 
-10. Do not restart the conversation after every message.
+9. "english" MUST translate/explain YOUR "reply".
+   It must NOT be a generic explanation unrelated to reply.
 
-Example:
+10. "followUp" should be a NEW Japanese question only when
+    a follow-up is useful.
 
-Learner:
-こんにちは
+11. Do not put the same Japanese sentence in reply and followUp.
 
-Good response:
-reply:
-こんにちは！今日はどうしましたか？
+12. Keep the Japanese suitable for a beginner/intermediate learner.
 
-english:
-Hello! How are you today?
+EXAMPLE:
 
-BAD response:
-こんにちは
+User:
+I am learning Japanese.
 
-BAD response:
-もう一度言ってみてください。
+Correct output:
+
+{
+  "reply": "いいですね！日本語の勉強は楽しいですか？",
+  "english": "That's great! Do you enjoy studying Japanese?",
+  "correction": null,
+  "tip": "「いいですね」は相手の話に賛成するときによく使います。",
+  "score": null,
+  "followUp": "どんな日本語を勉強していますか？"
+}
 
 Another example:
 
-Learner:
-I am learning Japanese.
+User:
+how to order food in restro or a cafe
 
-Good response:
-reply:
-いいですね！日本語の勉強は楽しいですか？
+Correct output:
 
-english:
-That's great! Do you enjoy studying Japanese?
+{
+  "reply": "もちろんです！レストランでは「これをください」と言うと注文できます。カフェなら「コーヒーを一つください」のように言えます。",
+  "english": "Of course! In a restaurant, you can order by saying 'これをください' (I'll have this, please). At a cafe, you can say 'コーヒーを一つください' (One coffee, please).",
+  "correction": null,
+  "tip": "「ください」は注文するときによく使う便利な expression です。",
+  "score": null,
+  "followUp": "カフェで注文する練習をしてみますか？"
+}
 
-The learner may use:
-- English
-- Hindi
-- Japanese
-- mixed language
-
-Understand all of them.
-
-Keep Japanese appropriate for a beginner/intermediate learner.
+Return ONLY valid JSON.
 `;
 
     /*
     =====================================================
-    GRAMMAR MODE
+    GRAMMAR PROMPT
     =====================================================
     */
 
-    const grammarRules = `
+    const grammarPrompt = `
 You are NOVARA, an advanced Japanese grammar checker.
 
-The learner submitted:
+Analyze this Japanese sentence:
 
-"${message}"
+${message}
 
-Analyze THIS Japanese sentence.
-
-IMPORTANT:
+RULES:
 
 1. Do NOT start a conversation.
-
 2. Do NOT ask a follow-up question.
-
-3. Do NOT simply repeat the submitted sentence.
-
-4. Determine whether the Japanese sentence is grammatically natural.
-
+3. Do NOT simply repeat the input.
+4. Check Japanese grammar and naturalness.
 5. Give a score from 0 to 100.
+6. Give a corrected Japanese sentence.
+7. Give the English meaning.
+8. Explain the grammar simply.
+9. Give one useful learning tip.
+10. "reply" should be a short Japanese assessment.
 
-6. If the sentence is correct:
-   - correction should contain the natural/correct sentence.
-   - explain why it is correct.
-
-7. If the sentence is incorrect:
-   - correction should contain the corrected Japanese sentence.
-   - explain the important mistake.
-
-8. "english" must give the English meaning.
-
-9. "tip" must give one useful learning tip.
-
-10. "reply" should contain a short Japanese assessment,
-not merely copy the input.
-
-11. Keep explanations simple and useful for a Japanese learner.
-
-Examples:
-
-Input:
-私は学生です。
-
-Good:
-reply:
-この文は自然で正しいです。
-
-english:
-I am a student.
-
-correction:
-私は学生です。
-
-score:
-100
-
-tip:
-「です」は丁寧な文の最後によく使われます。
-
-Another example:
+Example:
 
 Input:
 私は日本語を勉強するです。
 
-Good:
-reply:
-「するです」ではなく「します」を使うと自然です。
+Output:
 
-english:
-I study Japanese.
+{
+  "reply": "「するです」ではなく「します」を使うと自然です。",
+  "english": "I study Japanese.",
+  "correction": "私は日本語を勉強します。",
+  "tip": "丁寧な文では「します」を使います。",
+  "score": 70,
+  "followUp": null
+}
 
-correction:
-私は日本語を勉強します。
-
-score:
-70
-
-tip:
-丁寧な文では「します」を使います。
+Return ONLY valid JSON.
 `;
 
     /*
     =====================================================
-    GENERAL / TUTOR MODE
+    TUTOR PROMPT
     =====================================================
     */
 
-    const tutorRules = `
+    const tutorPrompt = `
 You are NOVARA, an advanced Japanese language tutor.
 
 Help the learner with:
 
-- Japanese
+- Japanese grammar
 - vocabulary
-- grammar
 - translation
 - pronunciation
 - JLPT
-- sentence correction
+- Japanese conversation
 - travel Japanese
 - food
 - introductions
 - daily Japanese
 - culture
-- conversation
 
-Answer naturally and clearly.
+Understand English, Hindi and Hinglish.
 
-If the learner asks something in English or Hindi,
-understand it normally.
+Give useful Japanese examples where appropriate.
 
-When Japanese is involved, provide useful Japanese
-examples where appropriate.
-`;
-
-    let systemPrompt;
-
-    if (mode === "grammar") {
-      systemPrompt = grammarRules;
-    } else if (mode === "conversation") {
-      systemPrompt = conversationRules;
-    } else {
-      systemPrompt = tutorRules;
-    }
-
-    /*
-    =====================================================
-    JSON OUTPUT INSTRUCTION
-    =====================================================
-    */
-
-    systemPrompt += `
-
-RETURN ONLY VALID JSON.
-
-Do NOT use markdown.
-Do NOT use code fences.
-Do NOT add text before or after the JSON.
-
-Use EXACTLY this structure:
+Return ONLY valid JSON:
 
 {
-  "reply": "string",
-  "english": "string",
+  "reply": "answer",
+  "english": "English explanation",
   "correction": null,
   "tip": null,
   "score": null,
   "followUp": null
 }
-
-RULES FOR FIELDS:
-
-reply:
-Main response.
-
-english:
-English meaning/explanation.
-
-correction:
-Japanese correction when relevant.
-Otherwise null.
-
-tip:
-Useful Japanese learning tip.
-Otherwise null.
-
-score:
-Number from 0 to 100 when evaluating Japanese.
-Otherwise null.
-
-followUp:
-A NEW Japanese follow-up question when appropriate.
-Otherwise null.
-
-IMPORTANT:
-Never put the same sentence in both reply and followUp.
-
-Never use the learner's exact sentence as the only reply.
 `;
+
+    let systemPrompt;
+
+    if (mode === "grammar") {
+      systemPrompt = grammarPrompt;
+    } else if (mode === "conversation") {
+      systemPrompt = conversationPrompt;
+    } else {
+      systemPrompt = tutorPrompt;
+    }
+
+    /*
+    =====================================================
+    CLOUDFARE MESSAGES
+    =====================================================
+    */
 
     const messages = [
       {
@@ -375,12 +299,12 @@ Never use the learner's exact sentence as the only reply.
           max_tokens:
             mode === "grammar"
               ? 700
-              : 500,
+              : 600,
 
           temperature:
             mode === "grammar"
               ? 0.2
-              : 0.7,
+              : 0.5,
         }),
       });
 
@@ -422,20 +346,97 @@ Never use the learner's exact sentence as the only reply.
 
     /*
     =====================================================
-    CLOUDFLARE RESPONSE
+    EXTRACT AI RESPONSE
     =====================================================
     */
 
-    const aiResponse =
+    let aiResponse =
       cloudflareData?.result?.response;
+
+    /*
+      Sometimes Cloudflare/model can return response
+      as a JSON string instead of an object.
+    */
+
+    if (typeof aiResponse === "string") {
+      try {
+        aiResponse =
+          JSON.parse(aiResponse);
+      } catch {
+        /*
+          If it isn't JSON, try the OpenAI-style
+          choices response.
+        */
+
+        aiResponse = null;
+      }
+    }
+
+    /*
+      Fallback: OpenAI-compatible response shape
+    */
+
+    if (
+      !aiResponse ||
+      typeof aiResponse !== "object"
+    ) {
+      const content =
+        cloudflareData?.result?.choices?.[0]
+          ?.message?.content;
+
+      if (typeof content === "string") {
+        try {
+          aiResponse =
+            JSON.parse(content);
+        } catch {
+          /*
+            Sometimes the model puts JSON inside
+            markdown fences.
+          */
+
+          const cleaned =
+            content
+              .replace(
+                /^```json\s*/i,
+                ""
+              )
+              .replace(
+                /^```\s*/i,
+                ""
+              )
+              .replace(
+                /\s*```$/i,
+                ""
+              )
+              .trim();
+
+          try {
+            aiResponse =
+              JSON.parse(cleaned);
+          } catch {
+            aiResponse = null;
+          }
+        }
+      }
+    }
+
+    /*
+    =====================================================
+    LAST FALLBACK
+    =====================================================
+    */
 
     if (
       !aiResponse ||
       typeof aiResponse !== "object"
     ) {
       console.error(
-        "Unexpected Cloudflare response:",
-        cloudflareData
+        "Could not parse Cloudflare AI response:",
+        JSON.stringify(
+          cloudflareData,
+          null,
+          2
+        )
       );
 
       return res.status(502).json({
@@ -447,7 +448,7 @@ Never use the learner's exact sentence as the only reply.
 
     /*
     =====================================================
-    NORMALIZE RESPONSE
+    NORMALIZE
     =====================================================
     */
 
@@ -462,17 +463,20 @@ Never use the learner's exact sentence as the only reply.
         : "";
 
     const correction =
-      typeof aiResponse.correction === "string"
+      typeof aiResponse.correction === "string" &&
+      aiResponse.correction.trim()
         ? aiResponse.correction.trim()
         : null;
 
     const tip =
-      typeof aiResponse.tip === "string"
+      typeof aiResponse.tip === "string" &&
+      aiResponse.tip.trim()
         ? aiResponse.tip.trim()
         : null;
 
     const followUp =
-      typeof aiResponse.followUp === "string"
+      typeof aiResponse.followUp === "string" &&
+      aiResponse.followUp.trim()
         ? aiResponse.followUp.trim()
         : null;
 
@@ -484,17 +488,21 @@ Never use the learner's exact sentence as the only reply.
     ) {
       score = Math.max(
         0,
-        Math.min(100, aiResponse.score)
+        Math.min(
+          100,
+          Math.round(
+            aiResponse.score
+          )
+        )
       );
     }
 
-    /*
-    =====================================================
-    EMPTY RESPONSE PROTECTION
-    =====================================================
-    */
-
     if (!reply) {
+      console.error(
+        "AI response had no reply:",
+        aiResponse
+      );
+
       return res.status(502).json({
         ok: false,
         error:
@@ -504,7 +512,7 @@ Never use the learner's exact sentence as the only reply.
 
     /*
     =====================================================
-    FINAL RESPONSE
+    RETURN TO FRONTEND
     =====================================================
     */
 
@@ -536,7 +544,6 @@ Never use the learner's exact sentence as the only reply.
 
     return res.status(500).json({
       ok: false,
-
       error:
         error?.message ||
         "A server error occurred.",
