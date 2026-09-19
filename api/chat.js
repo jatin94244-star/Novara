@@ -52,17 +52,18 @@ export default async function handler(req, res) {
         ? body.scenario
         : "general";
 
-    const history = Array.isArray(body.messages)
-      ? body.messages
-          .filter(
-            (item) =>
-              item &&
-              (item.role === "user" ||
-                item.role === "assistant") &&
-              typeof item.content === "string"
-          )
-          .slice(-10)
-      : [];
+    const history =
+      Array.isArray(body.messages)
+        ? body.messages
+            .filter(
+              (item) =>
+                item &&
+                (item.role === "user" ||
+                  item.role === "assistant") &&
+                typeof item.content === "string"
+            )
+            .slice(-12)
+        : [];
 
     if (!message) {
       return res.status(400).json({
@@ -80,65 +81,41 @@ ${mode}
 SCENARIO:
 ${scenario}
 
-The learner is practicing Japanese.
+The learner can talk about ANYTHING related to Japanese.
 
-You can help with:
-- Japanese conversation
-- vocabulary
-- grammar
-- translation
-- pronunciation
-- JLPT
-- sentence correction
-- travel Japanese
-- food
-- introductions
-- daily Japanese
-- culture
-- roleplay
-- free conversation
+For conversation:
+- Continue the current conversation naturally.
+- Remember previous messages.
+- Do NOT restart the conversation.
+- Do NOT restrict the user to predefined topics.
+- Reply naturally in Japanese.
+- Ask a relevant follow-up question when appropriate.
+- If the user writes English, understand it and help them learn Japanese.
+- If the user writes Japanese, respond naturally in Japanese.
 
-IMPORTANT CONVERSATION RULES:
+For every response:
+1. Give the natural Japanese response.
+2. Give an English explanation/translation.
+3. If the learner's Japanese contains an actual mistake, provide a correction.
+4. Give a short useful tip when appropriate.
+5. Give a score only when the learner's Japanese can reasonably be evaluated.
 
-1. Continue the current conversation naturally.
-2. Remember the recent context.
-3. Do NOT restart the conversation.
-4. Do NOT repeat the same Japanese sentence unnecessarily.
-5. If the learner asks a question in English, answer the question in English while also providing useful Japanese when appropriate.
-6. If the learner writes Japanese, respond naturally in Japanese.
-7. Give the English meaning separately.
-8. Ask a relevant follow-up question when appropriate.
-9. Do not force the conversation into fixed topics.
-10. The learner may talk about ANYTHING.
-
-For Japanese learner messages:
-- Evaluate correctness when appropriate.
-- If there is an error, provide a concise correction.
-- Do not invent an error when the sentence is correct.
-- Give a useful natural alternative when helpful.
-
+IMPORTANT:
 Return ONLY valid JSON.
 
-Required format:
+Use exactly this structure:
 
 {
   "reply": "Japanese response",
-  "english": "English meaning or explanation",
+  "english": "English translation or explanation",
   "correction": null,
   "tip": null,
   "score": null,
   "followUp": null
 }
 
-Rules:
-- reply must contain the actual Japanese response.
-- english must contain the English meaning/explanation.
-- correction should be null unless correction is useful.
-- tip should be null unless useful.
-- score should be a number from 0 to 100 only when evaluating Japanese.
-- followUp should contain a natural follow-up question when appropriate.
-- Never return markdown.
-- Never wrap JSON in code fences.
+Do not use markdown.
+Do not use code fences.
 `;
 
     const messages = [
@@ -169,7 +146,7 @@ Rules:
         body: JSON.stringify({
           messages,
           max_tokens: 700,
-          temperature: 0.6,
+          temperature: 0.5,
         }),
       }
     );
@@ -184,7 +161,7 @@ Rules:
         JSON.parse(rawText);
     } catch {
       console.error(
-        "Cloudflare raw response:",
+        "Cloudflare returned invalid JSON:",
         rawText
       );
 
@@ -204,122 +181,274 @@ Rules:
       return res.status(502).json({
         ok: false,
         error:
-          cloudflareData?.errors?.[0]?.message ||
+          cloudflareData?.errors?.[0]
+            ?.message ||
           "Cloudflare AI request failed.",
       });
     }
 
     /*
-     * Cloudflare can return structured JSON
-     * directly inside result.response.
+     * Cloudflare can return:
+     *
+     * result.response = "Japanese text"
+     *
+     * OR
+     *
+     * result.response = {
+     *   reply,
+     *   english,
+     *   correction,
+     *   tip,
+     *   score,
+     *   followUp
+     * }
+     *
+     * It can also return the normal
+     * OpenAI-compatible:
+     *
+     * result.choices[0].message.content
      */
 
     let aiResponse =
       cloudflareData?.result?.response;
 
-    /*
-     * Some responses can expose the model output
-     * through choices.
-     */
+    // -----------------------------------------
+    // FORMAT 1:
+    // result.response is an object
+    // -----------------------------------------
 
     if (
-      !aiResponse &&
-      Array.isArray(
-        cloudflareData?.result?.choices
-      )
+      aiResponse &&
+      typeof aiResponse === "object" &&
+      !Array.isArray(aiResponse)
     ) {
-      const choice =
-        cloudflareData.result.choices[0];
+      return res.status(200).json({
+        ok: true,
 
-      const content =
-        choice?.message?.content ||
-        choice?.text ||
-        "";
+        reply:
+          aiResponse.reply ||
+          "",
 
-      if (typeof content === "string") {
-        try {
-          aiResponse =
-            JSON.parse(content);
-        } catch {
-          /*
-           * If the model returned plain text,
-           * use it as the Japanese reply.
-           */
+        japanese:
+          aiResponse.reply ||
+          "",
 
-          aiResponse = {
-            reply: content,
-            english: "",
-            correction: null,
-            tip: null,
-            score: null,
-            followUp: null,
-          };
-        }
-      }
-    }
+        english:
+          aiResponse.english ||
+          "",
 
-    /*
-     * Final safety fallback.
-     */
-
-    if (
-      !aiResponse ||
-      typeof aiResponse !== "object"
-    ) {
-      console.error(
-        "Unexpected Cloudflare response:",
-        JSON.stringify(
-          cloudflareData,
+        correction:
+          aiResponse.correction ||
           null,
-          2
-        )
-      );
 
-      return res.status(502).json({
-        ok: false,
-        error:
-          "Cloudflare AI returned an invalid response.",
+        tip:
+          aiResponse.tip ||
+          null,
+
+        score:
+          typeof aiResponse.score === "number"
+            ? aiResponse.score
+            : null,
+
+        followUp:
+          aiResponse.followUp ||
+          null,
       });
     }
 
-    return res.status(200).json({
-      ok: true,
+    // -----------------------------------------
+    // FORMAT 2:
+    // result.response is plain string
+    // -----------------------------------------
 
-      reply:
-        typeof aiResponse.reply === "string"
-          ? aiResponse.reply
-          : "",
+    if (
+      typeof aiResponse === "string" &&
+      aiResponse.trim()
+    ) {
+      const text =
+        aiResponse.trim();
 
-      japanese:
-        typeof aiResponse.reply === "string"
-          ? aiResponse.reply
-          : "",
+      /*
+       * Sometimes the model follows our JSON
+       * instruction and puts JSON inside the
+       * string. Try parsing it first.
+       */
 
-      english:
-        typeof aiResponse.english === "string"
-          ? aiResponse.english
-          : "",
+      try {
+        const parsed =
+          JSON.parse(text);
 
-      correction:
-        typeof aiResponse.correction === "string"
-          ? aiResponse.correction
-          : null,
+        if (
+          parsed &&
+          typeof parsed === "object"
+        ) {
+          return res.status(200).json({
+            ok: true,
 
-      tip:
-        typeof aiResponse.tip === "string"
-          ? aiResponse.tip
-          : null,
+            reply:
+              parsed.reply ||
+              parsed.japanese ||
+              "",
 
-      score:
-        typeof aiResponse.score === "number"
-          ? aiResponse.score
-          : null,
+            japanese:
+              parsed.reply ||
+              parsed.japanese ||
+              "",
 
-      followUp:
-        typeof aiResponse.followUp === "string"
-          ? aiResponse.followUp
-          : null,
+            english:
+              parsed.english ||
+              "",
+
+            correction:
+              parsed.correction ||
+              null,
+
+            tip:
+              parsed.tip ||
+              null,
+
+            score:
+              typeof parsed.score ===
+              "number"
+                ? parsed.score
+                : null,
+
+            followUp:
+              parsed.followUp ||
+              null,
+          });
+        }
+      } catch {
+        // Not JSON.
+        // That's completely okay.
+      }
+
+      /*
+       * Plain Japanese response.
+       * Do NOT return 502.
+       */
+
+      return res.status(200).json({
+        ok: true,
+
+        reply: text,
+
+        japanese: text,
+
+        english: "",
+
+        correction: null,
+
+        tip: null,
+
+        score: null,
+
+        followUp: null,
+      });
+    }
+
+    // -----------------------------------------
+    // FORMAT 3:
+    // OpenAI-compatible choices response
+    // -----------------------------------------
+
+    const choiceContent =
+      cloudflareData?.result?.choices?.[0]
+        ?.message?.content;
+
+    if (
+      typeof choiceContent === "string" &&
+      choiceContent.trim()
+    ) {
+      const text =
+        choiceContent.trim();
+
+      try {
+        const parsed =
+          JSON.parse(text);
+
+        if (
+          parsed &&
+          typeof parsed === "object"
+        ) {
+          return res.status(200).json({
+            ok: true,
+
+            reply:
+              parsed.reply ||
+              parsed.japanese ||
+              "",
+
+            japanese:
+              parsed.reply ||
+              parsed.japanese ||
+              "",
+
+            english:
+              parsed.english ||
+              "",
+
+            correction:
+              parsed.correction ||
+              null,
+
+            tip:
+              parsed.tip ||
+              null,
+
+            score:
+              typeof parsed.score ===
+              "number"
+                ? parsed.score
+                : null,
+
+            followUp:
+              parsed.followUp ||
+              null,
+          });
+        }
+      } catch {
+        // Plain text response.
+      }
+
+      return res.status(200).json({
+        ok: true,
+
+        reply: text,
+
+        japanese: text,
+
+        english: "",
+
+        correction: null,
+
+        tip: null,
+
+        score: null,
+
+        followUp: null,
+      });
+    }
+
+    // -----------------------------------------
+    // Nothing usable
+    // -----------------------------------------
+
+    console.error(
+      "Cloudflare returned no usable response:",
+      JSON.stringify(
+        cloudflareData,
+        null,
+        2
+      )
+    );
+
+    return res.status(502).json({
+      ok: false,
+      error:
+        "Cloudflare AI returned an empty response.",
     });
+
   } catch (error) {
     console.error(
       "NOVARA API ERROR:",
