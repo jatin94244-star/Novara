@@ -24,7 +24,7 @@ export default function Grammar() {
 
     try {
       const response = await fetch(
-        "http://localhost:3001/api/grammar",
+        "/api/chat",
         {
           method: "POST",
 
@@ -33,31 +33,108 @@ export default function Grammar() {
           },
 
           body: JSON.stringify({
-            text: input.trim(),
+            message: input.trim(),
+            mode: "grammar",
+            scenario:
+              "Japanese Grammar Checker",
+            messages: [],
           }),
         }
       );
 
-      const data = await response.json();
+      const raw =
+        await response.text();
 
-      if (!response.ok) {
+      let data;
+
+      try {
+        data = JSON.parse(raw);
+      } catch {
         throw new Error(
-          data.error ||
-            "Grammar server error"
+          raw ||
+            "The server returned an invalid response."
         );
       }
 
-      setResult(data);
+      if (
+        !response.ok ||
+        data.ok === false
+      ) {
+        throw new Error(
+          data.error ||
+            "Grammar AI request failed."
+        );
+      }
 
+      const score =
+        typeof data.score === "number"
+          ? data.score
+          : 0;
+
+      const correction =
+        data.correction ||
+        data.reply ||
+        input.trim();
+
+      const meaning =
+        data.english ||
+        "No English explanation was provided.";
+
+      const grammar =
+        data.tip ||
+        data.english ||
+        "Novara could not provide a detailed explanation.";
+
+      let status =
+        "Needs Review";
+
+      if (score >= 90) {
+        status = "Excellent";
+      } else if (score >= 75) {
+        status = "Good";
+      } else if (score >= 50) {
+        status = "Needs Practice";
+      } else {
+        status = "Needs Correction";
+      }
+
+      let level =
+        "Japanese";
+
+      if (
+        input.trim().length <= 10
+      ) {
+        level = "Beginner";
+      } else if (
+        input.trim().length <= 25
+      ) {
+        level = "Elementary";
+      } else {
+        level = "Intermediate";
+      }
+
+      setResult({
+        score,
+        level,
+        status,
+        category: "Grammar",
+        correction,
+        meaning,
+        grammar,
+        tip:
+          data.tip ||
+          "Keep practicing natural Japanese sentence patterns.",
+      });
     } catch (error) {
-
-      console.error(error);
+      console.error(
+        "Novara Grammar Error:",
+        error
+      );
 
       setError(
         error.message ||
           "Sorry. I couldn't connect to the AI server."
       );
-
     } finally {
       setChecking(false);
     }
@@ -123,14 +200,12 @@ export default function Grammar() {
             setInput(event.target.value)
           }
           onKeyDown={(event) => {
-
             if (
               event.ctrlKey &&
               event.key === "Enter"
             ) {
               checkGrammar();
             }
-
           }}
           placeholder="例：私は学生です。"
           rows={5}
@@ -164,7 +239,6 @@ export default function Grammar() {
         >
 
           {examples.map((example) => (
-
             <button
               key={example}
               className="secondary-button"
@@ -172,14 +246,15 @@ export default function Grammar() {
                 useExample(example)
               }
               style={{
-                whiteSpace: "nowrap",
+                whiteSpace:
+                  "nowrap",
                 fontSize: "11px",
-                padding: "7px 10px",
+                padding:
+                  "7px 10px",
               }}
             >
               {example}
             </button>
-
           ))}
 
         </div>
@@ -219,7 +294,6 @@ export default function Grammar() {
 
 
       {error && (
-
         <div
           className="path-tip"
           style={{
@@ -240,12 +314,10 @@ export default function Grammar() {
           </div>
 
         </div>
-
       )}
 
 
       {checking && (
-
         <div
           className="question-card"
           style={{
@@ -254,7 +326,11 @@ export default function Grammar() {
           }}
         >
 
-          <div style={{ fontSize: "32px" }}>
+          <div
+            style={{
+              fontSize: "32px",
+            }}
+          >
             🧠
           </div>
 
@@ -262,216 +338,218 @@ export default function Grammar() {
             Novara is analyzing...
           </h3>
 
-          <p style={{ opacity: 0.5 }}>
+          <p
+            style={{
+              opacity: 0.5,
+            }}
+          >
             Checking Japanese grammar,
             particles and sentence structure.
           </p>
 
         </div>
-
       )}
 
 
-      {result && !checking && (
+      {result &&
+        !checking && (
+          <div>
 
-        <div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns:
+                  "repeat(auto-fit,minmax(160px,1fr))",
+                gap: "12px",
+                marginBottom: "18px",
+              }}
+            >
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns:
-                "repeat(auto-fit,minmax(160px,1fr))",
-              gap: "12px",
-              marginBottom: "18px",
-            }}
-          >
+              <div className="result-card">
+                <strong>
+                  {result.score}
+                </strong>
 
-            <div className="result-card">
-              <strong>
-                {result.score}
-              </strong>
+                <span>
+                  Grammar Score
+                </span>
+              </div>
 
-              <span>
-                Grammar Score
-              </span>
+
+              <div className="result-card">
+                <strong>
+                  {result.level}
+                </strong>
+
+                <span>
+                  Level
+                </span>
+              </div>
+
+
+              <div className="result-card">
+                <strong>
+                  {result.status}
+                </strong>
+
+                <span>
+                  Status
+                </span>
+              </div>
+
+
+              <div className="result-card">
+                <strong>
+                  {result.category}
+                </strong>
+
+                <span>
+                  Category
+                </span>
+              </div>
+
             </div>
-
-
-            <div className="result-card">
-              <strong>
-                {result.level}
-              </strong>
-
-              <span>
-                Level
-              </span>
-            </div>
-
-
-            <div className="result-card">
-              <strong>
-                {result.status}
-              </strong>
-
-              <span>
-                Status
-              </span>
-            </div>
-
-
-            <div className="result-card">
-              <strong>
-                {result.category}
-              </strong>
-
-              <span>
-                Category
-              </span>
-            </div>
-
-          </div>
-
-
-          <div
-            className="question-card"
-            style={{
-              marginBottom: "14px",
-            }}
-          >
-
-            <div className="eyebrow">
-              NOVARA ANALYSIS
-            </div>
-
-            <h2>
-              Your sentence
-            </h2>
 
 
             <div
+              className="question-card"
+              style={{
+                marginBottom: "14px",
+              }}
+            >
+
+              <div className="eyebrow">
+                NOVARA ANALYSIS
+              </div>
+
+              <h2>
+                Your sentence
+              </h2>
+
+
+              <div
+                style={{
+                  marginTop: "14px",
+                  padding: "16px",
+                  borderRadius: "13px",
+                  background:
+                    "rgba(255,255,255,.035)",
+                  fontSize: "21px",
+                  lineHeight: 1.6,
+                }}
+              >
+                {input}
+              </div>
+
+
+              <h3
+                style={{
+                  marginTop: "20px",
+                  marginBottom: "8px",
+                }}
+              >
+                Correct / Recommended
+              </h3>
+
+
+              <div
+                style={{
+                  padding: "16px",
+                  borderRadius: "13px",
+                  background:
+                    "rgba(124,92,255,.10)",
+                  border:
+                    "1px solid rgba(124,92,255,.22)",
+                  fontSize: "21px",
+                  lineHeight: 1.6,
+                }}
+              >
+                {result.correction}
+              </div>
+
+            </div>
+
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns:
+                  "repeat(auto-fit,minmax(260px,1fr))",
+                gap: "14px",
+              }}
+            >
+
+              <div className="question-card">
+
+                <div className="eyebrow">
+                  MEANING
+                </div>
+
+                <h3>
+                  🇬🇧 English
+                </h3>
+
+                <p
+                  style={{
+                    opacity: 0.72,
+                    lineHeight: 1.7,
+                  }}
+                >
+                  {result.meaning}
+                </p>
+
+              </div>
+
+
+              <div className="question-card">
+
+                <div className="eyebrow">
+                  GRAMMAR
+                </div>
+
+                <h3>
+                  🧠 Why?
+                </h3>
+
+                <p
+                  style={{
+                    opacity: 0.72,
+                    lineHeight: 1.7,
+                  }}
+                >
+                  {result.grammar}
+                </p>
+
+              </div>
+
+            </div>
+
+
+            <div
+              className="path-tip"
               style={{
                 marginTop: "14px",
-                padding: "16px",
-                borderRadius: "13px",
-                background:
-                  "rgba(255,255,255,.035)",
-                fontSize: "21px",
-                lineHeight: 1.6,
               }}
             >
-              {input}
-            </div>
 
+              <span>💡</span>
 
-            <h3
-              style={{
-                marginTop: "20px",
-                marginBottom: "8px",
-              }}
-            >
-              Correct / Recommended
-            </h3>
+              <div>
 
+                <strong>
+                  Novara Tip
+                </strong>
 
-            <div
-              style={{
-                padding: "16px",
-                borderRadius: "13px",
-                background:
-                  "rgba(124,92,255,.10)",
-                border:
-                  "1px solid rgba(124,92,255,.22)",
-                fontSize: "21px",
-                lineHeight: 1.6,
-              }}
-            >
-              {result.correction}
-            </div>
+                <p>
+                  {result.tip}
+                </p>
 
-          </div>
-
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns:
-                "repeat(auto-fit,minmax(260px,1fr))",
-              gap: "14px",
-            }}
-          >
-
-            <div className="question-card">
-
-              <div className="eyebrow">
-                MEANING
               </div>
 
-              <h3>
-                🇬🇧 English
-              </h3>
-
-              <p
-                style={{
-                  opacity: 0.72,
-                  lineHeight: 1.7,
-                }}
-              >
-                {result.meaning}
-              </p>
-
-            </div>
-
-
-            <div className="question-card">
-
-              <div className="eyebrow">
-                GRAMMAR
-              </div>
-
-              <h3>
-                🧠 Why?
-              </h3>
-
-              <p
-                style={{
-                  opacity: 0.72,
-                  lineHeight: 1.7,
-                }}
-              >
-                {result.grammar}
-              </p>
-
             </div>
 
           </div>
-
-
-          <div
-            className="path-tip"
-            style={{
-              marginTop: "14px",
-            }}
-          >
-
-            <span>💡</span>
-
-            <div>
-
-              <strong>
-                Novara Tip
-              </strong>
-
-              <p>
-                {result.tip}
-              </p>
-
-            </div>
-
-          </div>
-
-        </div>
-
-      )}
+        )}
 
     </section>
   );
