@@ -218,24 +218,23 @@ Never return markdown fences.
     }
 
     const aiText =
-      cloudflareData?.result?.response;
+  cloudflareData?.result?.response;
 
-    if (
-      typeof aiText !== "string" ||
-      !aiText.trim()
-    ) {
-      console.error(
-        "Unexpected Cloudflare response:",
-        cloudflareData
-      );
+if (
+  typeof aiText !== "string" ||
+  !aiText.trim()
+) {
+  console.error(
+    "FULL CLOUDFLARE RESPONSE:",
+    JSON.stringify(cloudflareData, null, 2)
+  );
 
-      return res.status(502).json({
-        ok: false,
-        error:
-          "Cloudflare AI returned an empty response."
-      });
-    }
-
+  return res.status(502).json({
+    ok: false,
+    error: "Cloudflare AI returned an empty response.",
+    debug: cloudflareData
+  });
+}
     let parsed;
 
     try {
