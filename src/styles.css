@@ -1398,3 +1398,962 @@ body {
     touch-action: manipulation;
   }
 }
+/* =========================================================
+   NOVARA CONVERSATION — PREMIUM RESPONSIVE UI
+   ========================================================= */
+
+.novara-conversation-page {
+  min-width: 0;
+}
+
+.novara-conversation-header {
+  align-items: center;
+}
+
+/* Scenario selector */
+
+.novara-scenario-wrapper {
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.novara-scenario-scroll {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 2px 2px 8px;
+  scrollbar-width: none;
+}
+
+.novara-scenario-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.novara-scenario-card {
+  flex: 0 0 165px;
+  min-height: 68px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 13px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 14px;
+  background: rgba(255,255,255,.035);
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition:
+    transform .18s ease,
+    border-color .18s ease,
+    background .18s ease;
+}
+
+.novara-scenario-card:hover:not(:disabled) {
+  transform: translateY(-2px);
+  border-color: rgba(124,92,255,.4);
+}
+
+.novara-scenario-card.active {
+  background: rgba(124,92,255,.13);
+  border-color: rgba(124,92,255,.45);
+}
+
+.novara-scenario-card:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+.novara-scenario-icon {
+  font-size: 23px;
+  flex-shrink: 0;
+}
+
+.novara-scenario-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.novara-scenario-text strong {
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.novara-scenario-text small {
+  font-size: 9px;
+  line-height: 1.35;
+  opacity: .5;
+}
+
+/* Current scenario */
+
+.novara-current-scenario {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  padding: 15px 17px;
+  margin-bottom: 14px;
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 16px;
+  background: rgba(255,255,255,.025);
+}
+
+.novara-current-scenario > div {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+}
+
+.novara-current-icon {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: rgba(124,92,255,.12);
+  font-size: 20px;
+}
+
+.novara-current-scenario h2 {
+  margin: 3px 0 0;
+  font-size: 17px;
+}
+
+.novara-clear-button {
+  flex-shrink: 0;
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.035);
+  color: inherit;
+  border-radius: 9px;
+  padding: 8px 11px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.novara-clear-button:hover:not(:disabled) {
+  background: rgba(255,255,255,.07);
+}
+
+.novara-clear-button:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+/* Chat */
+
+.novara-chat-card {
+  width: 100%;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 18px;
+  background: rgba(255,255,255,.025);
+  overflow: hidden;
+}
+
+.novara-chat-messages {
+  width: 100%;
+  height: min(55vh, 560px);
+  min-height: 350px;
+  overflow-y: auto;
+  padding: 6px 4px 14px;
+  scroll-behavior: smooth;
+}
+
+.novara-chat-messages::-webkit-scrollbar {
+  width: 5px;
+}
+
+.novara-chat-messages::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.novara-chat-messages::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,.12);
+  border-radius: 20px;
+}
+
+.novara-message-row {
+  display: flex;
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.novara-message-row.user {
+  justify-content: flex-end;
+}
+
+.novara-message-row.assistant {
+  justify-content: flex-start;
+}
+
+.novara-message {
+  width: fit-content;
+  max-width: min(82%, 680px);
+  padding: 13px 15px;
+  border-radius: 16px;
+  min-width: 0;
+}
+
+.novara-message.user {
+  background: rgba(124,92,255,.15);
+  border: 1px solid rgba(124,92,255,.27);
+  border-bottom-right-radius: 5px;
+}
+
+.novara-message.assistant {
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.075);
+  border-bottom-left-radius: 5px;
+}
+
+.novara-message-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 7px;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  opacity: .42;
+}
+
+.novara-message-label span {
+  font-size: 11px;
+}
+
+.novara-message-label.user-label {
+  justify-content: flex-end;
+}
+
+.novara-japanese-text {
+  font-size: 17px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+/* Message buttons */
+
+.novara-message-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 11px;
+}
+
+.novara-mini-button {
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.035);
+  color: inherit;
+  border-radius: 8px;
+  padding: 6px 9px;
+  font-size: 10px;
+  cursor: pointer;
+  transition: background .15s ease;
+}
+
+.novara-mini-button:hover {
+  background: rgba(255,255,255,.08);
+}
+
+/* English */
+
+.novara-english-box,
+.novara-correction-box,
+.novara-tip-box {
+  display: flex;
+  gap: 9px;
+  margin-top: 11px;
+  padding: 10px 11px;
+  border-radius: 11px;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.novara-english-box {
+  background: rgba(255,255,255,.035);
+  border: 1px solid rgba(255,255,255,.06);
+}
+
+.novara-correction-box {
+  background: rgba(255,184,77,.07);
+  border: 1px solid rgba(255,184,77,.14);
+}
+
+.novara-tip-box {
+  background: rgba(124,92,255,.07);
+  border: 1px solid rgba(124,92,255,.14);
+}
+
+.novara-english-box strong,
+.novara-correction-box strong,
+.novara-tip-box strong {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  opacity: .65;
+}
+
+.novara-english-box p,
+.novara-correction-box p,
+.novara-tip-box p {
+  margin: 0;
+  opacity: .75;
+}
+
+/* Score */
+
+.novara-score {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid rgba(255,255,255,.06);
+  font-size: 10px;
+  opacity: .6;
+}
+
+.novara-score strong {
+  font-size: 12px;
+}
+
+/* Typing */
+
+.novara-message.typing {
+  padding-bottom: 14px;
+}
+
+.novara-typing {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 20px;
+}
+
+.novara-typing span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: .3;
+  animation: novaraTyping 1.2s infinite ease-in-out;
+}
+
+.novara-typing span:nth-child(2) {
+  animation-delay: .15s;
+}
+
+.novara-typing span:nth-child(3) {
+  animation-delay: .3s;
+}
+
+.novara-typing em {
+  margin-left: 4px;
+  font-size: 10px;
+  font-style: normal;
+  opacity: .4;
+}
+
+@keyframes novaraTyping {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: .25;
+  }
+
+  30% {
+    transform: translateY(-4px);
+    opacity: .8;
+  }
+}
+
+/* Error */
+
+.novara-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 4px;
+  padding: 12px;
+  border: 1px solid rgba(255,100,100,.15);
+  border-radius: 12px;
+  background: rgba(255,70,70,.055);
+}
+
+.novara-error > span {
+  flex-shrink: 0;
+}
+
+.novara-error strong {
+  font-size: 12px;
+}
+
+.novara-error p {
+  margin: 4px 0 7px;
+  font-size: 11px;
+  line-height: 1.5;
+  opacity: .65;
+  overflow-wrap: anywhere;
+}
+
+.novara-error button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  font-size: 10px;
+  opacity: .5;
+  cursor: pointer;
+}
+
+/* Input */
+
+.novara-input-area {
+  display: flex;
+  gap: 9px;
+  align-items: flex-end;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,.06);
+}
+
+.novara-input-wrapper {
+  flex: 1;
+  min-width: 0;
+}
+
+.novara-chat-input {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  max-height: 130px;
+  padding: 12px 13px;
+  resize: none;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 12px;
+  outline: none;
+  background: rgba(255,255,255,.035);
+  color: inherit;
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.novara-chat-input:focus {
+  border-color: rgba(124,92,255,.45);
+  background: rgba(124,92,255,.035);
+}
+
+.novara-chat-input:disabled {
+  opacity: .5;
+}
+
+.novara-input-hint {
+  margin-top: 5px;
+  font-size: 9px;
+  opacity: .3;
+}
+
+.novara-send-button {
+  min-width: 76px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 0;
+  border-radius: 12px;
+  background: rgba(124,92,255,.85);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    transform .15s ease,
+    opacity .15s ease;
+}
+
+.novara-send-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.novara-send-button:disabled {
+  opacity: .35;
+  cursor: not-allowed;
+}
+
+.novara-send-loading {
+  letter-spacing: 3px;
+  animation: novaraDots 1s infinite;
+}
+
+@keyframes novaraDots {
+  0%, 100% {
+    opacity: .35;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 640px) {
+
+  .novara-conversation-header {
+    align-items: flex-start;
+  }
+
+  .novara-conversation-header .language-pill {
+    align-self: flex-start;
+  }
+
+  .novara-scenario-card {
+    flex-basis: 145px;
+    min-height: 62px;
+    padding: 9px 10px;
+  }
+
+  .novara-scenario-icon {
+    font-size: 20px;
+  }
+
+  .novara-scenario-text strong {
+    font-size: 11px;
+  }
+
+  .novara-scenario-text small {
+    font-size: 8px;
+  }
+
+  .novara-current-scenario {
+    padding: 12px;
+  }
+
+  .novara-current-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+  }
+
+  .novara-current-scenario h2 {
+    font-size: 15px;
+  }
+
+  .novara-clear-button {
+    padding: 7px 9px;
+    font-size: 10px;
+  }
+
+  .novara-chat-card {
+    padding: 9px;
+    border-radius: 15px;
+  }
+
+  .novara-chat-messages {
+    min-height: 330px;
+    height: 54vh;
+    padding: 4px 2px 10px;
+  }
+
+  .novara-message {
+    max-width: 91%;
+    padding: 11px 12px;
+    border-radius: 14px;
+  }
+
+  .novara-japanese-text {
+    font-size: 16px;
+    line-height: 1.7;
+  }
+
+  .novara-message-actions {
+    gap: 5px;
+  }
+
+  .novara-mini-button {
+    padding: 6px 8px;
+    font-size: 9px;
+  }
+
+  .novara-input-area {
+    gap: 6px;
+  }
+
+  .novara-chat-input {
+    min-height: 46px;
+    font-size: 15px;
+  }
+
+  .novara-send-button {
+    min-width: 58px;
+    width: 58px;
+    height: 46px;
+  }
+
+  .novara-send-button span:first-child {
+    display: none;
+  }
+
+  .novara-input-hint {
+    display: none;
+  }
+
+  .novara-english-box,
+  .novara-correction-box,
+  .novara-tip-box {
+    font-size: 11px;
+    padding: 9px;
+  }
+}
+
+/* =========================================================
+   VERY SMALL PHONES
+   ========================================================= */
+
+@media (max-width: 380px) {
+
+  .novara-message {
+    max-width: 94%;
+  }
+
+  .novara-scenario-card {
+    flex-basis: 135px;
+  }
+
+  .novara-current-scenario {
+    gap: 8px;
+  }
+
+  .novara-current-scenario > div {
+    gap: 7px;
+  }
+
+  .novara-clear-button {
+    font-size: 9px;
+    padding: 6px 7px;
+  }
+}
+/* =========================================================
+   NOVARA CONVERSATION — MOBILE CHAT FIX
+   ========================================================= */
+
+.novara-conversation-page {
+  width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+/* Chat card must stay inside phone width */
+.novara-chat-card {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* IMPORTANT:
+   Every message MUST occupy its own full row.
+   Prevents user + assistant bubbles appearing side-by-side.
+*/
+.novara-chat-messages {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+.novara-message-row {
+  display: flex !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  flex: 0 0 100% !important;
+  clear: both !important;
+  float: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Assistant = left */
+.novara-message-row.assistant {
+  justify-content: flex-start !important;
+  align-self: stretch !important;
+}
+
+/* User = right */
+.novara-message-row.user {
+  justify-content: flex-end !important;
+  align-self: stretch !important;
+}
+
+/* Message bubble */
+.novara-message {
+  box-sizing: border-box;
+  min-width: 0;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* Assistant bubble */
+.novara-message.assistant {
+  width: auto;
+  max-width: min(78%, 620px);
+  margin-right: auto !important;
+}
+
+/* User bubble */
+.novara-message.user {
+  width: auto;
+  max-width: min(78%, 620px);
+  margin-left: auto !important;
+}
+
+/* Japanese text */
+.novara-japanese-text {
+  min-width: 0;
+  max-width: 100%;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+/* English / correction / tips cannot push the bubble wider */
+.novara-english-box,
+.novara-correction-box,
+.novara-tip-box {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+}
+
+/* Action buttons wrap instead of pushing chat horizontally */
+.novara-message-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: 100%;
+}
+
+/* Input area */
+.novara-input-area {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.novara-input-wrapper {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.novara-chat-input {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+/* =========================================================
+   PHONE
+   ========================================================= */
+
+@media (max-width: 700px) {
+
+  .novara-conversation-page {
+    width: 100%;
+    max-width: 100%;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .novara-conversation-header {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .novara-scenario-wrapper {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .novara-scenario-scroll {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    display: flex;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .novara-current-scenario {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .novara-chat-card {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    border-radius: 16px;
+    box-sizing: border-box;
+  }
+
+  .novara-chat-messages {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    height: auto;
+    min-height: 360px;
+    max-height: 58vh;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding-left: 0;
+    padding-right: 0;
+    box-sizing: border-box;
+  }
+
+  /* FORCE one message per row */
+  .novara-message-row {
+    display: flex !important;
+    width: 100% !important;
+    flex-basis: 100% !important;
+    flex-shrink: 0 !important;
+    flex-grow: 0 !important;
+    clear: both !important;
+    float: none !important;
+  }
+
+  .novara-message-row.assistant {
+    justify-content: flex-start !important;
+  }
+
+  .novara-message-row.user {
+    justify-content: flex-end !important;
+  }
+
+  .novara-message.assistant,
+  .novara-message.user {
+    max-width: 82% !important;
+    width: auto !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .novara-japanese-text {
+    font-size: 16px;
+    line-height: 1.65;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .novara-message-actions {
+    width: 100%;
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .novara-mini-button {
+    max-width: 100%;
+    flex-shrink: 1;
+  }
+
+  .novara-english-box,
+  .novara-correction-box,
+  .novara-tip-box {
+    width: 100%;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .novara-input-area {
+    display: flex;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    gap: 8px;
+    box-sizing: border-box;
+  }
+
+  .novara-input-wrapper {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: auto;
+  }
+
+  .novara-chat-input {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    font-size: 15px;
+  }
+
+  .novara-send-button {
+    flex: 0 0 auto;
+    min-width: 62px;
+    max-width: 82px;
+  }
+
+  .novara-input-hint {
+    font-size: 9px;
+    white-space: normal;
+    line-height: 1.4;
+  }
+}
+
+
+/* =========================================================
+   VERY SMALL PHONES
+   ========================================================= */
+
+@media (max-width: 400px) {
+
+  .novara-message.assistant,
+  .novara-message.user {
+    max-width: 86% !important;
+  }
+
+  .novara-chat-messages {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .novara-japanese-text {
+    font-size: 15px;
+  }
+
+  .novara-send-button {
+    min-width: 58px;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .novara-input-hint {
+    font-size: 8px;
+  }
+}

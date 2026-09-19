@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 const scenarios = [
   {
@@ -7,6 +7,7 @@ const scenarios = [
     icon: "☕",
     description: "Order food and drinks in Japanese.",
     starter: "こんにちは。何を注文しますか？",
+    english: "Hello. What would you like to order?",
   },
   {
     id: "meeting",
@@ -14,6 +15,7 @@ const scenarios = [
     icon: "🤝",
     description: "Introduce yourself and meet someone.",
     starter: "こんにちは。お名前は何ですか？",
+    english: "Hello. What is your name?",
   },
   {
     id: "shopping",
@@ -21,6 +23,7 @@ const scenarios = [
     icon: "🛍️",
     description: "Practice shopping conversations.",
     starter: "いらっしゃいませ。何をお探しですか？",
+    english: "Welcome. What are you looking for?",
   },
   {
     id: "travel",
@@ -28,53 +31,82 @@ const scenarios = [
     icon: "✈️",
     description: "Practice useful travel Japanese.",
     starter: "こんにちは。どこへ行きたいですか？",
+    english: "Hello. Where would you like to go?",
   },
 ];
 
+function createStarter(scenario) {
+  return {
+    role: "assistant",
+    content: scenario.starter,
+    english: scenario.english,
+    correction: null,
+    tip: null,
+    score: null,
+    followUp: null,
+  };
+}
+
 export default function Conversation() {
-  const [selectedScenario, setSelectedScenario] =
-    useState(scenarios[0]);
+  const [selectedScenario, setSelectedScenario] = useState(
+    scenarios[0]
+  );
 
   const [messages, setMessages] = useState([
-    {
-      role: "assistant",
-      content: scenarios[0].starter,
-      english: "Hello. What would you like to order?",
-    },
+    createStarter(scenarios[0]),
   ]);
 
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showEnglish, setShowEnglish] = useState({});
+  const [copiedIndex, setCopiedIndex] = useState(null);
+
+  const chatRef = useRef(null);
+  const textareaRef = useRef(null);
+
+  useEffect(() => {
+    if (!chatRef.current) return;
+
+    chatRef.current.scrollTo({
+      top: chatRef.current.scrollHeight,
+      behavior: "smooth",
+    });
+  }, [messages, loading]);
 
   function changeScenario(scenario) {
+    if (loading) return;
+
     setSelectedScenario(scenario);
-
-    setMessages([
-      {
-        role: "assistant",
-        content: scenario.starter,
-        english:
-          scenario.id === "cafe"
-            ? "Hello. What would you like to order?"
-            : scenario.id === "meeting"
-            ? "Hello. What is your name?"
-            : scenario.id === "shopping"
-            ? "Welcome. What are you looking for?"
-            : "Hello. Where would you like to go?",
-      },
-    ]);
-
+    setMessages([createStarter(scenario)]);
     setInput("");
     setError("");
+    setShowEnglish({});
+    setCopiedIndex(null);
+
+    setTimeout(() => {
+      textareaRef.current?.focus();
+    }, 100);
+  }
+
+  function clearConversation() {
+    if (loading) return;
+
+    setMessages([createStarter(selectedScenario)]);
+    setInput("");
+    setError("");
+    setShowEnglish({});
+    setCopiedIndex(null);
+
+    setTimeout(() => {
+      textareaRef.current?.focus();
+    }, 100);
   }
 
   async function sendMessage() {
     const text = input.trim();
 
-    if (!text || loading) {
-      return;
-    }
+    if (!text || loading) return;
 
     setError("");
 
@@ -83,28 +115,34 @@ export default function Conversation() {
       content: text,
     };
 
-    const updatedMessages = [
-      ...messages,
-      userMessage,
-    ];
+    const historyForApi = messages
+      .slice(-10)
+      .map((message) => ({
+        role: message.role,
+        content: message.content,
+      }));
 
-    setMessages(updatedMessages);
+    setMessages((current) => [
+      ...current,
+      userMessage,
+    ]);
+
     setInput("");
     setLoading(true);
 
     try {
-      const response = await fetch("/api/chat", {
+      const response = await fetch(
+  "https://novara-ruby.vercel.app/api/chat",
+  {
         method: "POST",
-
         headers: {
           "Content-Type": "application/json",
         },
-
         body: JSON.stringify({
           message: text,
           mode: "conversation",
           scenario: selectedScenario.title,
-          messages: messages.slice(-10),
+          messages: historyForApi,
         }),
       });
 
@@ -116,36 +154,38 @@ export default function Conversation() {
         data = JSON.parse(raw);
       } catch {
         throw new Error(
-          raw ||
-            "The server returned an invalid response."
+          raw || "The server returned an invalid response."
         );
       }
 
       if (!response.ok || data.ok === false) {
         throw new Error(
-          data.error ||
-            "Novara AI request failed."
+          data.error || "Novara AI request failed."
+        );
+      }
+
+      const reply =
+        data.reply ||
+        data.japanese ||
+        "";
+
+      if (!reply.trim()) {
+        throw new Error(
+          "Novara AI returned an empty response."
         );
       }
 
       const assistantMessage = {
         role: "assistant",
-        content:
-          data.reply ||
-          data.japanese ||
-          "すみません。もう一度試してください。",
-        english:
-          data.english || "",
-        correction:
-          data.correction || null,
-        tip:
-          data.tip || null,
+        content: reply,
+        english: data.english || "",
+        correction: data.correction || null,
+        tip: data.tip || null,
         score:
           typeof data.score === "number"
             ? data.score
             : null,
-        followUp:
-          data.followUp || null,
+        followUp: data.followUp || null,
       };
 
       setMessages((current) => [
@@ -164,13 +204,18 @@ export default function Conversation() {
       );
     } finally {
       setLoading(false);
+
+      setTimeout(() => {
+        textareaRef.current?.focus();
+      }, 100);
     }
   }
 
   function handleKeyDown(event) {
     if (
       event.key === "Enter" &&
-      !event.shiftKey
+      !event.shiftKey &&
+      !event.nativeEvent.isComposing
     ) {
       event.preventDefault();
       sendMessage();
@@ -180,7 +225,8 @@ export default function Conversation() {
   function speak(text) {
     if (
       typeof window === "undefined" ||
-      !window.speechSynthesis
+      !window.speechSynthesis ||
+      !text
     ) {
       return;
     }
@@ -192,18 +238,42 @@ export default function Conversation() {
 
     utterance.lang = "ja-JP";
     utterance.rate = 0.9;
+    utterance.pitch = 1;
 
-    window.speechSynthesis.speak(
-      utterance
-    );
+    window.speechSynthesis.speak(utterance);
+  }
+
+  async function copyText(text, index) {
+    if (!text) return;
+
+    try {
+      await navigator.clipboard.writeText(text);
+
+      setCopiedIndex(index);
+
+      setTimeout(() => {
+        setCopiedIndex(null);
+      }, 1200);
+    } catch {
+      // Clipboard may be unavailable in some browsers.
+    }
+  }
+
+  function toggleEnglish(index) {
+    setShowEnglish((current) => ({
+      ...current,
+      [index]: !current[index],
+    }));
   }
 
   return (
-    <section className="page">
+    <section className="page novara-conversation-page">
 
-      {/* HEADER */}
+      {/* =====================================================
+          HEADER
+      ===================================================== */}
 
-      <div className="page-header">
+      <div className="page-header novara-conversation-header">
 
         <div>
           <div className="eyebrow">
@@ -227,261 +297,311 @@ export default function Conversation() {
       </div>
 
 
-      {/* SCENARIOS */}
+      {/* =====================================================
+          SCENARIOS
+      ===================================================== */}
 
-      <div
-        style={{
-          display: "flex",
-          gap: "10px",
-          overflowX: "auto",
-          paddingBottom: "6px",
-          marginBottom: "18px",
-        }}
-      >
+      <div className="novara-scenario-wrapper">
 
-        {scenarios.map((scenario) => {
+        <div className="novara-scenario-scroll">
 
-          const active =
-            selectedScenario.id ===
-            scenario.id;
+          {scenarios.map((scenario) => {
+            const active =
+              selectedScenario.id === scenario.id;
 
-          return (
-            <button
-              key={scenario.id}
-              onClick={() =>
-                changeScenario(scenario)
-              }
-              className={
-                active
-                  ? "primary-button"
-                  : "secondary-button"
-              }
-              style={{
-                minWidth: "145px",
-                textAlign: "left",
-                flexShrink: 0,
-              }}
-            >
-              <span
-                style={{
-                  marginRight: "6px",
-                }}
+            return (
+              <button
+                key={scenario.id}
+                type="button"
+                onClick={() =>
+                  changeScenario(scenario)
+                }
+                disabled={loading}
+                className={
+                  active
+                    ? "novara-scenario-card active"
+                    : "novara-scenario-card"
+                }
               >
-                {scenario.icon}
-              </span>
+                <span className="novara-scenario-icon">
+                  {scenario.icon}
+                </span>
 
-              {scenario.title}
-            </button>
-          );
-        })}
+                <span className="novara-scenario-text">
+                  <strong>
+                    {scenario.title}
+                  </strong>
 
-      </div>
+                  <small>
+                    {scenario.description}
+                  </small>
+                </span>
 
+              </button>
+            );
+          })}
 
-      {/* SCENARIO INFO */}
-
-      <div
-        className="question-card"
-        style={{
-          marginBottom: "16px",
-        }}
-      >
-
-        <div className="eyebrow">
-          CURRENT SCENARIO
         </div>
 
-        <h2>
-          {selectedScenario.icon}{" "}
-          {selectedScenario.title}
-        </h2>
+      </div>
 
-        <p
-          style={{
-            opacity: 0.65,
-            marginBottom: 0,
-          }}
+
+      {/* =====================================================
+          CURRENT SCENARIO
+      ===================================================== */}
+
+      <div className="novara-current-scenario">
+
+        <div>
+          <span className="novara-current-icon">
+            {selectedScenario.icon}
+          </span>
+
+          <div>
+            <div className="eyebrow">
+              CURRENT SCENARIO
+            </div>
+
+            <h2>
+              {selectedScenario.title}
+            </h2>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          className="novara-clear-button"
+          onClick={clearConversation}
+          disabled={loading}
         >
-          {selectedScenario.description}
-        </p>
+          ↻ New Chat
+        </button>
 
       </div>
 
 
-      {/* CHAT */}
+      {/* =====================================================
+          CHAT
+      ===================================================== */}
 
-      <div
-        className="question-card"
-        style={{
-          padding: "16px",
-        }}
-      >
+      <div className="novara-chat-card">
 
         <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "14px",
-            minHeight: "360px",
-            maxHeight: "58vh",
-            overflowY: "auto",
-            paddingRight: "4px",
-          }}
+          ref={chatRef}
+          className="novara-chat-messages"
         >
 
-          {messages.map(
-            (message, index) => {
+          {messages.map((message, index) => {
+            const isUser =
+              message.role === "user";
 
-              const isUser =
-                message.role === "user";
+            return (
+              <div
+                key={`${index}-${message.content}`}
+                className={
+                  isUser
+                    ? "novara-message-row user"
+                    : "novara-message-row assistant"
+                }
+              >
 
-              return (
                 <div
-                  key={index}
-                  style={{
-                    display: "flex",
-                    justifyContent:
-                      isUser
-                        ? "flex-end"
-                        : "flex-start",
-                  }}
+                  className={
+                    isUser
+                      ? "novara-message user"
+                      : "novara-message assistant"
+                  }
                 >
 
-                  <div
-                    style={{
-                      maxWidth: "82%",
-                      padding: "13px 15px",
-                      borderRadius: "15px",
-                      background: isUser
-                        ? "rgba(124,92,255,.16)"
-                        : "rgba(255,255,255,.045)",
-                      border: isUser
-                        ? "1px solid rgba(124,92,255,.25)"
-                        : "1px solid rgba(255,255,255,.08)",
-                    }}
-                  >
-
-                    <div
-                      style={{
-                        fontSize: "17px",
-                        lineHeight: 1.65,
-                        wordBreak:
-                          "break-word",
-                      }}
-                    >
-                      {message.content}
+                  {!isUser && (
+                    <div className="novara-message-label">
+                      <span>✦</span>
+                      NOVARA
                     </div>
+                  )}
+
+                  {isUser && (
+                    <div className="novara-message-label user-label">
+                      YOU
+                    </div>
+                  )}
+
+                  <div className="novara-japanese-text">
+                    {message.content}
+                  </div>
 
 
-                    {!isUser &&
-                      message.english && (
-                        <div
-                          style={{
-                            marginTop: "9px",
-                            paddingTop: "9px",
-                            borderTop:
-                              "1px solid rgba(255,255,255,.07)",
-                            fontSize: "13px",
-                            opacity: 0.6,
-                            lineHeight: 1.5,
-                          }}
-                        >
-                          🇬🇧{" "}
-                          {message.english}
-                        </div>
-                      )}
+                  {/* Assistant tools */}
 
+                  {!isUser && (
+                    <div className="novara-message-actions">
 
-                    {!isUser &&
-                      message.correction && (
-                        <div
-                          style={{
-                            marginTop: "10px",
-                            fontSize: "13px",
-                            opacity: 0.75,
-                          }}
-                        >
-                          ✏️{" "}
-                          {message.correction}
-                        </div>
-                      )}
-
-
-                    {!isUser &&
-                      message.tip && (
-                        <div
-                          style={{
-                            marginTop: "8px",
-                            fontSize: "12px",
-                            opacity: 0.6,
-                          }}
-                        >
-                          💡 {message.tip}
-                        </div>
-                      )}
-
-
-                    {!isUser && (
                       <button
+                        type="button"
                         onClick={() =>
-                          speak(
-                            message.content
-                          )
+                          speak(message.content)
                         }
-                        className="secondary-button"
-                        style={{
-                          marginTop: "10px",
-                          padding:
-                            "5px 9px",
-                          fontSize: "11px",
-                        }}
+                        className="novara-mini-button"
                       >
                         🔊 Listen
                       </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          copyText(
+                            message.content,
+                            index
+                          )
+                        }
+                        className="novara-mini-button"
+                      >
+                        {copiedIndex === index
+                          ? "✓ Copied"
+                          : "Copy"}
+                      </button>
+
+                      {message.english && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            toggleEnglish(index)
+                          }
+                          className="novara-mini-button"
+                        >
+                          🇬🇧{" "}
+                          {showEnglish[index]
+                            ? "Hide"
+                            : "English"}
+                        </button>
+                      )}
+
+                    </div>
+                  )}
+
+
+                  {/* English */}
+
+                  {!isUser &&
+                    message.english &&
+                    showEnglish[index] && (
+                      <div className="novara-english-box">
+                        <span>🇬🇧</span>
+
+                        <div>
+                          <strong>
+                            English
+                          </strong>
+
+                          <p>
+                            {message.english}
+                          </p>
+                        </div>
+                      </div>
                     )}
 
-                  </div>
+
+                  {/* Correction */}
+
+                  {!isUser &&
+                    message.correction && (
+                      <div className="novara-correction-box">
+                        <span>✏️</span>
+
+                        <div>
+                          <strong>
+                            Correction
+                          </strong>
+
+                          <p>
+                            {message.correction}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+
+                  {/* Tip */}
+
+                  {!isUser &&
+                    message.tip && (
+                      <div className="novara-tip-box">
+                        <span>💡</span>
+
+                        <div>
+                          <strong>
+                            Novara Tip
+                          </strong>
+
+                          <p>
+                            {message.tip}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+
+                  {/* Score */}
+
+                  {!isUser &&
+                    typeof message.score ===
+                      "number" && (
+                      <div className="novara-score">
+                        <span>
+                          Japanese Score
+                        </span>
+
+                        <strong>
+                          {message.score}/100
+                        </strong>
+                      </div>
+                    )}
 
                 </div>
-              );
-            }
-          )}
 
+              </div>
+            );
+          })}
+
+
+          {/* =================================================
+              TYPING INDICATOR
+          ================================================= */}
 
           {loading && (
-            <div
-              style={{
-                display: "flex",
-                justifyContent:
-                  "flex-start",
-              }}
-            >
-              <div
-                style={{
-                  padding: "13px 15px",
-                  borderRadius: "15px",
-                  background:
-                    "rgba(255,255,255,.045)",
-                  opacity: 0.65,
-                }}
-              >
-                🧠 Novara is thinking...
+            <div className="novara-message-row assistant">
+
+              <div className="novara-message assistant typing">
+
+                <div className="novara-message-label">
+                  <span>✦</span>
+                  NOVARA
+                </div>
+
+                <div className="novara-typing">
+                  <span />
+                  <span />
+                  <span />
+                  <em>
+                    Thinking...
+                  </em>
+                </div>
+
               </div>
+
             </div>
           )}
 
         </div>
 
 
-        {/* ERROR */}
+        {/* ===================================================
+            ERROR
+        =================================================== */}
 
         {error && (
-          <div
-            className="path-tip"
-            style={{
-              marginTop: "14px",
-            }}
-          >
+          <div className="novara-error">
+
             <span>⚠️</span>
 
             <div>
@@ -492,78 +612,70 @@ export default function Conversation() {
               <p>
                 {error}
               </p>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setError("")
+                }
+              >
+                Dismiss
+              </button>
             </div>
+
           </div>
         )}
 
 
-        {/* INPUT */}
+        {/* ===================================================
+            INPUT
+        =================================================== */}
 
-        <div
-          style={{
-            display: "flex",
-            gap: "9px",
-            marginTop: "14px",
-            alignItems: "flex-end",
-          }}
-        >
+        <div className="novara-input-area">
 
-          <textarea
-            value={input}
-            onChange={(event) =>
-              setInput(event.target.value)
-            }
-            onKeyDown={handleKeyDown}
-            placeholder="日本語で話してみてください..."
-            rows={2}
-            disabled={loading}
-            style={{
-              flex: 1,
-              minWidth: 0,
-              padding: "13px",
-              resize: "none",
-              borderRadius: "13px",
-              border:
-                "1px solid rgba(255,255,255,.1)",
-              background:
-                "rgba(255,255,255,.035)",
-              color: "inherit",
-              outline: "none",
-              fontSize: "16px",
-              lineHeight: 1.5,
-              fontFamily: "inherit",
-              boxSizing: "border-box",
-            }}
-          />
+          <div className="novara-input-wrapper">
+
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={(event) =>
+                setInput(event.target.value)
+              }
+              onKeyDown={handleKeyDown}
+              placeholder="Type in Japanese, English or Hinglish..."
+              rows={1}
+              disabled={loading}
+              className="novara-chat-input"
+            />
+
+            <div className="novara-input-hint">
+              Enter to send · Shift + Enter for new line
+            </div>
+
+          </div>
 
           <button
-            className="primary-button"
+            type="button"
+            className="novara-send-button"
             onClick={sendMessage}
             disabled={
               !input.trim() ||
               loading
             }
-            style={{
-              flexShrink: 0,
-            }}
+            aria-label="Send message"
           >
-            {loading
-              ? "..."
-              : "Send →"}
+            {loading ? (
+              <span className="novara-send-loading">
+                •••
+              </span>
+            ) : (
+              <>
+                <span>Send</span>
+                <span>↑</span>
+              </>
+            )}
           </button>
 
-        </div>
-
-
-        <div
-          style={{
-            marginTop: "8px",
-            fontSize: "11px",
-            opacity: 0.4,
-          }}
-        >
-          Press Enter to send · Shift + Enter
-          for a new line
         </div>
 
       </div>
