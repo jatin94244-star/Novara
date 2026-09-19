@@ -1,115 +1,176 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, {
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 const scenarios = [
   {
     id: "cafe",
     icon: "☕",
     title: "At a Café",
-    subtitle: "Order a drink and food",
+    subtitle: "Order food and drinks",
     level: "Beginner",
-    starter: "こんにちは！何を注文しますか？",
-    starterEnglish: "Hello! What would you like to order?",
+    starter:
+      "こんにちは！何を注文しますか？",
+    english:
+      "Hello! What would you like to order?",
   },
+
   {
     id: "intro",
     icon: "👋",
     title: "Meeting Someone",
     subtitle: "Introduce yourself",
     level: "Beginner",
-    starter: "こんにちは。はじめまして。お名前は何ですか？",
-    starterEnglish: "Hello! Nice to meet you. What's your name?",
+    starter:
+      "こんにちは！はじめまして。お名前は何ですか？",
+    english:
+      "Hello! Nice to meet you. What's your name?",
   },
+
   {
     id: "shopping",
     icon: "🛍️",
     title: "Shopping",
-    subtitle: "Ask about products and prices",
+    subtitle: "Products and prices",
     level: "Beginner",
-    starter: "いらっしゃいませ。何をお探しですか？",
-    starterEnglish: "Welcome! What are you looking for?",
+    starter:
+      "いらっしゃいませ！何をお探しですか？",
+    english:
+      "Welcome! What are you looking for?",
   },
+
   {
     id: "travel",
     icon: "🚆",
     title: "Travel",
-    subtitle: "Ask for directions",
+    subtitle: "Directions and transport",
     level: "Beginner",
-    starter: "こんにちは。どこへ行きたいですか？",
-    starterEnglish: "Hello. Where would you like to go?",
+    starter:
+      "こんにちは。どこへ行きたいですか？",
+    english:
+      "Hello. Where would you like to go?",
   },
 ];
 
-const starterSuggestions = [
-  "こんにちは",
-  "わたしは学生です",
-  "コーヒーをください",
+const suggestions = [
+  "こんにちは！",
+  "私はジャティンです。",
+  "コーヒーをください。",
   "これはいくらですか？",
 ];
 
 function speak(text) {
-  if (!window.speechSynthesis || !text) {
+  if (
+    !window.speechSynthesis ||
+    !text
+  ) {
     return;
   }
 
   window.speechSynthesis.cancel();
 
-  const utterance = new SpeechSynthesisUtterance(text);
+  const utterance =
+    new SpeechSynthesisUtterance(text);
 
   utterance.lang = "ja-JP";
   utterance.rate = 0.82;
 
-  window.speechSynthesis.speak(utterance);
+  window.speechSynthesis.speak(
+    utterance
+  );
+}
+
+function convertMessages(messages) {
+  return messages
+    .filter(
+      (message) =>
+        message.role === "user" ||
+        message.role === "ai"
+    )
+    .slice(-12)
+    .map((message) => ({
+      role:
+        message.role === "ai"
+          ? "assistant"
+          : "user",
+
+      content:
+        message.japanese || "",
+    }));
 }
 
 export default function Conversation() {
-  const [scenario, setScenario] = useState(scenarios[0]);
+  const [scenario, setScenario] =
+    useState(scenarios[0]);
 
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      role: "ai",
-      japanese: scenarios[0].starter,
-      english: scenarios[0].starterEnglish,
-      score: null,
-      correction: null,
-    },
-  ]);
+  const [messages, setMessages] =
+    useState([
+      {
+        id: 1,
+        role: "ai",
+        japanese:
+          scenarios[0].starter,
+        english:
+          scenarios[0].english,
+        score: null,
+        correction: null,
+        tip: null,
+      },
+    ]);
 
-  const [input, setInput] = useState("");
+  const [input, setInput] =
+    useState("");
 
-  const [isTyping, setIsTyping] = useState(false);
+  const [isTyping, setIsTyping] =
+    useState(false);
 
-  const [sessionXP, setSessionXP] = useState(0);
+  const [sessionXP, setSessionXP] =
+    useState(0);
 
-  const [mistakes, setMistakes] = useState(0);
+  const [mistakes, setMistakes] =
+    useState(0);
 
-  const inputRef = useRef(null);
+  const inputRef =
+    useRef(null);
+
+  const chatRef =
+    useRef(null);
 
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
 
-  function changeScenario(nextScenario) {
-    setScenario(nextScenario);
+  useEffect(() => {
+    if (chatRef.current) {
+      chatRef.current.scrollTop =
+        chatRef.current.scrollHeight;
+    }
+  }, [messages, isTyping]);
+
+  function changeScenario(next) {
+    setScenario(next);
 
     setMessages([
       {
         id: Date.now(),
         role: "ai",
-        japanese: nextScenario.starter,
-        english: nextScenario.starterEnglish,
+        japanese: next.starter,
+        english: next.english,
         score: null,
         correction: null,
+        tip: null,
       },
     ]);
 
     setInput("");
-    setMistakes(0);
     setSessionXP(0);
+    setMistakes(0);
 
     setTimeout(() => {
       inputRef.current?.focus();
-    }, 100);
+    }, 50);
   }
 
   async function sendMessage(customText) {
@@ -118,11 +179,15 @@ export default function Conversation() {
         ? customText
         : input;
 
-    if (!text.trim() || isTyping) {
+    const cleanText =
+      text.trim();
+
+    if (
+      !cleanText ||
+      isTyping
+    ) {
       return;
     }
-
-    const cleanText = text.trim();
 
     const userMessage = {
       id: Date.now(),
@@ -131,74 +196,115 @@ export default function Conversation() {
       english: null,
       score: null,
       correction: null,
+      tip: null,
     };
 
-    setMessages((previous) => [
-      ...previous,
+    const nextMessages = [
+      ...messages,
       userMessage,
-    ]);
+    ];
 
+    setMessages(nextMessages);
     setInput("");
     setIsTyping(true);
 
     try {
-      const response = await fetch(
-        "http://localhost:3001/api/chat",
-        {
+      const response =
+        await fetch("/api/chat", {
           method: "POST",
+
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type":
+              "application/json",
           },
+
           body: JSON.stringify({
             message: cleanText,
-            scenario: scenario.id,
-          }),
-        }
-      );
 
-      const data = await response.json();
+            scenario:
+              scenario.id,
+
+            mode:
+              "conversation",
+
+            messages:
+              convertMessages(
+                messages
+              ),
+          }),
+        });
+
+      const data =
+        await response.json();
 
       if (!response.ok) {
         throw new Error(
-          data?.details ||
-            data?.error ||
-            `AI request failed: ${response.status}`
+          data.error ||
+            "AI request failed"
         );
       }
 
       const score =
-        typeof data.score === "number"
+        typeof data.score ===
+        "number"
           ? data.score
-          : 80;
+          : null;
 
       const aiMessage = {
-        id: Date.now() + 1,
+        id:
+          Date.now() + 1,
+
         role: "ai",
+
         japanese:
+          data.reply ||
           data.japanese ||
-          "すみません。もう一度お願いします。",
+          "もう一度言ってみてください。",
+
         english:
-          data.english ||
-          "Sorry, please try again.",
-        score: score,
+          data.english || "",
+
+        score,
+
         correction:
-          data.correction || null,
+          data.correction ||
+          null,
+
+        tip:
+          data.tip ||
+          null,
+
+        followUp:
+          data.followUp ||
+          null,
       };
 
-      setMessages((previous) => [
-        ...previous,
-        aiMessage,
-      ]);
-
-      const earnedXP = Math.round(score / 10);
-
-      setSessionXP(
-        (previous) => previous + earnedXP
+      setMessages(
+        (previous) => [
+          ...previous,
+          aiMessage,
+        ]
       );
+
+      if (
+        typeof score === "number"
+      ) {
+        setSessionXP(
+          (previous) =>
+            previous +
+            Math.max(
+              1,
+              Math.round(
+                score / 10
+              )
+            )
+        );
+      }
 
       if (data.correction) {
         setMistakes(
-          (previous) => previous + 1
+          (previous) =>
+            previous + 1
         );
       }
 
@@ -208,43 +314,54 @@ export default function Conversation() {
         error
       );
 
-      setMessages((previous) => [
-        ...previous,
-        {
-          id: Date.now() + 1,
-          role: "ai",
-          japanese:
-            "すみません。AIサーバーに接続できませんでした。",
-          english:
-            "Sorry. I couldn't connect to the AI server.",
-          score: 0,
-          correction: null,
-        },
-      ]);
+      setMessages(
+        (previous) => [
+          ...previous,
+          {
+            id: Date.now() + 1,
+            role: "ai",
+
+            japanese:
+              "すみません。もう一度試してください。",
+
+            english:
+              "Sorry. I couldn't process that request.",
+
+            score: null,
+            correction: null,
+
+            tip:
+              error.message ||
+              "Please try again.",
+          },
+        ]
+      );
+
     } finally {
       setIsTyping(false);
 
       setTimeout(() => {
         inputRef.current?.focus();
-      }, 100);
+      }, 50);
     }
   }
 
-  function endSession() {
-    const totalUserMessages =
+  function finishSession() {
+    const userMessages =
       messages.filter(
         (message) =>
           message.role === "user"
       ).length;
 
     const accuracy =
-      totalUserMessages === 0
+      userMessages === 0
         ? 0
         : Math.max(
             0,
             Math.round(
-              ((totalUserMessages - mistakes) /
-                totalUserMessages) *
+              ((userMessages -
+                mistakes) /
+                userMessages) *
                 100
             )
           );
@@ -254,28 +371,27 @@ export default function Conversation() {
     );
   }
 
-  const userMessages =
+  const userCount =
     messages.filter(
       (message) =>
         message.role === "user"
     ).length;
 
   const accuracy =
-    userMessages === 0
+    userCount === 0
       ? "--"
       : `${Math.max(
           0,
           Math.round(
-            ((userMessages - mistakes) /
-              userMessages) *
+            ((userCount -
+              mistakes) /
+              userCount) *
               100
           )
         )}%`;
 
   return (
     <section className="page conversation-page">
-
-      {/* HEADER */}
 
       <div className="page-header">
         <div>
@@ -288,8 +404,8 @@ export default function Conversation() {
           </h1>
 
           <p>
-            Practice real-world Japanese
-            conversations with Novara.
+            Have a real Japanese
+            conversation with Novara.
           </p>
         </div>
 
@@ -304,7 +420,7 @@ export default function Conversation() {
         style={{
           display: "grid",
           gridTemplateColumns:
-            "repeat(auto-fit,minmax(160px,1fr))",
+            "repeat(auto-fit,minmax(140px,1fr))",
           gap: "12px",
           marginBottom: "18px",
         }}
@@ -313,7 +429,6 @@ export default function Conversation() {
           <strong>
             +{sessionXP}
           </strong>
-
           <span>
             Session XP
           </span>
@@ -321,9 +436,8 @@ export default function Conversation() {
 
         <div className="result-card">
           <strong>
-            {userMessages}
+            {userCount}
           </strong>
-
           <span>
             Messages
           </span>
@@ -333,19 +447,8 @@ export default function Conversation() {
           <strong>
             {accuracy}
           </strong>
-
           <span>
             Accuracy
-          </span>
-        </div>
-
-        <div className="result-card">
-          <strong>
-            {mistakes}
-          </strong>
-
-          <span>
-            Corrections
           </span>
         </div>
       </div>
@@ -370,67 +473,56 @@ export default function Conversation() {
           style={{
             display: "grid",
             gridTemplateColumns:
-              "repeat(auto-fit,minmax(190px,1fr))",
+              "repeat(auto-fit,minmax(180px,1fr))",
             gap: "10px",
             marginTop: "15px",
           }}
         >
-          {scenarios.map((item) => (
-            <button
-              key={item.id}
-              onClick={() =>
-                changeScenario(item)
-              }
-              className="secondary-button"
-              style={{
-                textAlign: "left",
-                padding: "15px",
-                border:
-                  scenario.id === item.id
-                    ? "1px solid rgba(124,92,255,.7)"
-                    : undefined,
-              }}
-            >
-              <div
+          {scenarios.map(
+            (item) => (
+              <button
+                key={item.id}
+                onClick={() =>
+                  changeScenario(item)
+                }
+                className="secondary-button"
                 style={{
-                  fontSize: "25px",
-                  marginBottom: "8px",
-                }}
-              >
-                {item.icon}
-              </div>
+                  textAlign: "left",
+                  padding: "14px",
 
-              <strong
-                style={{
-                  display: "block",
+                  border:
+                    scenario.id ===
+                    item.id
+                      ? "1px solid rgba(124,92,255,.7)"
+                      : undefined,
                 }}
               >
-                {item.title}
-              </strong>
+                <div
+                  style={{
+                    fontSize: "24px",
+                    marginBottom: "7px",
+                  }}
+                >
+                  {item.icon}
+                </div>
 
-              <span
-                style={{
-                  display: "block",
-                  opacity: 0.55,
-                  marginTop: "4px",
-                  fontSize: "12px",
-                }}
-              >
-                {item.subtitle}
-              </span>
+                <strong>
+                  {item.title}
+                </strong>
 
-              <span
-                style={{
-                  display: "block",
-                  marginTop: "8px",
-                  fontSize: "10px",
-                  opacity: 0.4,
-                }}
-              >
-                {item.level}
-              </span>
-            </button>
-          ))}
+                <span
+                  style={{
+                    display: "block",
+                    opacity: 0.55,
+                    marginTop: "4px",
+                    fontSize: "12px",
+                  }}
+                >
+                  {item.subtitle}
+                </span>
+              </button>
+            )
+          )}
         </div>
       </div>
 
@@ -444,43 +536,48 @@ export default function Conversation() {
         }}
       >
 
-        {/* CHAT HEADER */}
+        {/* HEADER */}
 
         <div
           style={{
-            padding: "18px",
+            padding: "16px",
             borderBottom:
               "1px solid rgba(255,255,255,.07)",
             display: "flex",
             justifyContent:
               "space-between",
             alignItems: "center",
-            gap: "12px",
+            gap: "10px",
           }}
         >
           <div
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "11px",
+              gap: "10px",
+              minWidth: 0,
             }}
           >
             <div
               style={{
-                width: "44px",
-                height: "44px",
+                width: "42px",
+                height: "42px",
+                flexShrink: 0,
                 borderRadius: "50%",
                 display: "grid",
                 placeItems: "center",
                 background:
                   "rgba(124,92,255,.14)",
-                fontSize: "21px",
               }}
             >
               ✦
             </div>
 
-            <div>
+            <div
+              style={{
+                minWidth: 0,
+              }}
+            >
               <strong>
                 Novara AI
               </strong>
@@ -492,14 +589,18 @@ export default function Conversation() {
                   marginTop: "3px",
                 }}
               >
-                {scenario.title} • Online
+                {scenario.title}
+                {" • "}
+                Online
               </div>
             </div>
           </div>
 
           <button
             className="secondary-button"
-            onClick={endSession}
+            onClick={
+              finishSession
+            }
           >
             Finish
           </button>
@@ -508,81 +609,98 @@ export default function Conversation() {
         {/* MESSAGES */}
 
         <div
+          ref={chatRef}
           style={{
-            minHeight: "390px",
-            maxHeight: "520px",
+            minHeight: "380px",
+            maxHeight: "540px",
             overflowY: "auto",
-            padding: "18px",
+            padding: "16px",
             display: "flex",
             flexDirection: "column",
             gap: "14px",
           }}
         >
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              style={{
-                display: "flex",
-                justifyContent:
-                  message.role === "user"
-                    ? "flex-end"
-                    : "flex-start",
-              }}
-            >
+          {messages.map(
+            (message) => (
               <div
+                key={message.id}
                 style={{
-                  maxWidth: "78%",
+                  display: "flex",
+                  justifyContent:
+                    message.role ===
+                    "user"
+                      ? "flex-end"
+                      : "flex-start",
                 }}
               >
-
-                {/* MESSAGE BUBBLE */}
-
                 <div
                   style={{
-                    padding: "13px 15px",
-                    borderRadius:
-                      message.role === "user"
-                        ? "16px 16px 4px 16px"
-                        : "16px 16px 16px 4px",
-                    background:
-                      message.role === "user"
-                        ? "rgba(124,92,255,.16)"
-                        : "rgba(255,255,255,.045)",
-                    border:
-                      "1px solid rgba(255,255,255,.06)",
+                    maxWidth:
+                      "min(82%, 620px)",
                   }}
                 >
                   <div
                     style={{
-                      fontSize: "18px",
-                      lineHeight: 1.55,
+                      padding:
+                        "12px 14px",
+                      borderRadius:
+                        message.role ===
+                        "user"
+                          ? "16px 16px 4px 16px"
+                          : "16px 16px 16px 4px",
+
+                      background:
+                        message.role ===
+                        "user"
+                          ? "rgba(124,92,255,.16)"
+                          : "rgba(255,255,255,.045)",
+
+                      border:
+                        "1px solid rgba(255,255,255,.06)",
                     }}
                   >
-                    {message.japanese}
-                  </div>
-
-                  {message.english && (
                     <div
                       style={{
-                        marginTop: "7px",
-                        fontSize: "12px",
-                        opacity: 0.48,
-                        lineHeight: 1.5,
+                        fontSize:
+                          message.role ===
+                          "user"
+                            ? "16px"
+                            : "18px",
+                        lineHeight: 1.55,
+                        wordBreak:
+                          "break-word",
                       }}
                     >
-                      {message.english}
+                      {
+                        message.japanese
+                      }
                     </div>
-                  )}
-                </div>
 
-                {/* AI CONTROLS */}
+                    {message.english && (
+                      <div
+                        style={{
+                          marginTop: "7px",
+                          fontSize: "12px",
+                          opacity: 0.55,
+                          lineHeight: 1.5,
+                        }}
+                      >
+                        {
+                          message.english
+                        }
+                      </div>
+                    )}
+                  </div>
 
-                {message.role === "ai" &&
-                  message.japanese && (
+                  {message.role ===
+                    "ai" && (
                     <div
                       style={{
                         display: "flex",
-                        alignItems: "center",
+                        flexWrap:
+                          "wrap",
+                        alignItems:
+                          "center",
                         gap: "7px",
                         marginTop: "6px",
                       }}
@@ -595,61 +713,86 @@ export default function Conversation() {
                           )
                         }
                         style={{
-                          padding: "5px 9px",
-                          fontSize: "11px",
+                          padding:
+                            "5px 9px",
+                          fontSize:
+                            "11px",
                         }}
                       >
                         🔊 Listen
                       </button>
 
-                      {message.score !==
-                        null && (
+                      {typeof message.score ===
+                        "number" && (
                         <span
                           style={{
-                            fontSize: "10px",
-                            opacity: 0.4,
+                            fontSize:
+                              "10px",
+                            opacity: 0.45,
                           }}
                         >
-                          +
-                          {Math.round(
-                            message.score / 10
-                          )}{" "}
-                          XP
+                          Score{" "}
+                          {
+                            message.score
+                          }
                         </span>
                       )}
                     </div>
                   )}
 
-                {/* CORRECTION */}
+                  {message.correction && (
+                    <div
+                      className="path-tip"
+                      style={{
+                        marginTop: "9px",
+                        padding: "10px",
+                      }}
+                    >
+                      <span>
+                        💡
+                      </span>
 
-                {message.correction && (
-                  <div
-                    className="path-tip"
-                    style={{
-                      marginTop: "9px",
-                      padding: "11px",
-                    }}
-                  >
-                    <span>
-                      💡
-                    </span>
+                      <div>
+                        <strong>
+                          Correction
+                        </strong>
 
-                    <div>
-                      <strong>
-                        Correction
-                      </strong>
-
-                      <p>
-                        {message.correction}
-                      </p>
+                        <p>
+                          {
+                            message.correction
+                          }
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
+                  )}
 
-          {/* TYPING */}
+                  {message.tip && (
+                    <div
+                      style={{
+                        marginTop: "7px",
+                        fontSize: "11px",
+                        opacity: 0.55,
+                      }}
+                    >
+                      💡 {message.tip}
+                    </div>
+                  )}
+
+                  {message.followUp && (
+                    <div
+                      style={{
+                        marginTop: "7px",
+                        fontSize: "12px",
+                        opacity: 0.7,
+                      }}
+                    >
+                      {message.followUp}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          )}
 
           {isTyping && (
             <div
@@ -663,17 +806,20 @@ export default function Conversation() {
           )}
         </div>
 
-        {/* SUGGESTIONS */}
+        {/* QUICK SUGGESTIONS */}
 
         <div
           style={{
-            padding: "0 18px 12px",
+            padding:
+              "0 16px 12px",
             display: "flex",
             gap: "7px",
             overflowX: "auto",
+            scrollbarWidth:
+              "none",
           }}
         >
-          {starterSuggestions.map(
+          {suggestions.map(
             (suggestion) => (
               <button
                 key={suggestion}
@@ -685,9 +831,10 @@ export default function Conversation() {
                 }
                 disabled={isTyping}
                 style={{
-                  whiteSpace: "nowrap",
-                  padding: "7px 10px",
+                  flexShrink: 0,
                   fontSize: "11px",
+                  padding:
+                    "7px 10px",
                 }}
               >
                 {suggestion}
@@ -700,11 +847,12 @@ export default function Conversation() {
 
         <div
           style={{
-            padding: "12px 18px 18px",
+            padding:
+              "12px 16px 16px",
             borderTop:
               "1px solid rgba(255,255,255,.07)",
             display: "flex",
-            gap: "9px",
+            gap: "8px",
           }}
         >
           <input
@@ -717,20 +865,21 @@ export default function Conversation() {
             }
             onKeyDown={(event) => {
               if (
-                event.key === "Enter" &&
-                !event.shiftKey
+                event.key ===
+                "Enter"
               ) {
-                event.preventDefault();
                 sendMessage();
               }
             }}
-            placeholder="Type in Japanese..."
+            placeholder="Talk to Novara in Japanese..."
             disabled={isTyping}
             style={{
               flex: 1,
               minWidth: 0,
-              padding: "13px 14px",
-              borderRadius: "12px",
+              padding:
+                "12px 13px",
+              borderRadius:
+                "12px",
               border:
                 "1px solid rgba(255,255,255,.1)",
               background:
@@ -738,7 +887,8 @@ export default function Conversation() {
               color: "inherit",
               outline: "none",
               fontSize: "15px",
-              fontFamily: "inherit",
+              fontFamily:
+                "inherit",
             }}
           />
 
@@ -753,13 +903,11 @@ export default function Conversation() {
             }
           >
             {isTyping
-              ? "Thinking..."
+              ? "..."
               : "Send →"}
           </button>
         </div>
       </div>
-
-      {/* TIP */}
 
       <div
         className="path-tip"
@@ -767,20 +915,19 @@ export default function Conversation() {
           marginTop: "18px",
         }}
       >
-        <span>
-          🧠
-        </span>
+        <span>🧠</span>
 
         <div>
           <strong>
-            Speak, don't memorize
+            Speak naturally
           </strong>
 
           <p>
-            Try answering in Japanese even
-            when you're unsure. Novara will
-            help you understand and correct
-            your mistakes.
+            Ask Novara anything about
+            Japanese. It remembers the
+            recent conversation and can
+            explain, correct, translate
+            and continue the dialogue.
           </p>
         </div>
       </div>
