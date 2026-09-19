@@ -171,8 +171,23 @@ export default function Tutor() {
           }),
         });
 
-      const data =
-        await response.json();
+      const raw = await response.text();
+
+let data;
+
+try {
+  data = JSON.parse(raw);
+} catch {
+  throw new Error(
+    raw || "Server returned an invalid response."
+  );
+}
+
+if (!response.ok || data.ok === false) {
+  throw new Error(
+    data.error || "AI request failed."
+  );
+}
 
       if (!response.ok) {
         throw new Error(
