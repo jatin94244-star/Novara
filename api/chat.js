@@ -21,17 +21,13 @@ export default async function handler(req, res) {
   }
 
   try {
-    const accountId =
-      process.env.CLOUDFLARE_ACCOUNT_ID;
-
-    const apiToken =
-      process.env.CLOUDFLARE_API_TOKEN;
+    const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+    const apiToken = process.env.CLOUDFLARE_API_TOKEN;
 
     if (!accountId || !apiToken) {
       return res.status(500).json({
         ok: false,
-        error:
-          "Cloudflare environment variables are missing."
+        error: "Cloudflare environment variables are missing."
       });
     }
 
@@ -42,24 +38,20 @@ export default async function handler(req, res) {
         ? body.message.trim()
         : "";
 
-    const mode =
-      body.mode || "tutor";
+    const mode = body.mode || "tutor";
+    const scenario = body.scenario || "general";
 
-    const scenario =
-      body.scenario || "general";
-
-    const history =
-      Array.isArray(body.messages)
-        ? body.messages
-            .filter(
-              (item) =>
-                item &&
-                (item.role === "user" ||
-                  item.role === "assistant") &&
-                typeof item.content === "string"
-            )
-            .slice(-12)
-        : [];
+    const history = Array.isArray(body.messages)
+      ? body.messages
+          .filter(
+            (item) =>
+              item &&
+              (item.role === "user" ||
+                item.role === "assistant") &&
+              typeof item.content === "string"
+          )
+          .slice(-12)
+      : [];
 
     if (!message) {
       return res.status(400).json({
@@ -69,7 +61,7 @@ export default async function handler(req, res) {
     }
 
     const systemPrompt = `
-You are NOVARA, an intelligent Japanese language tutor.
+You are NOVARA, an advanced Japanese language tutor.
 
 MODE:
 ${mode}
@@ -79,11 +71,11 @@ ${scenario}
 
 The learner can ask ANY question related to Japanese.
 
-You can help with:
+Help with:
 - Japanese conversation
 - vocabulary
 - grammar
-- translations
+- translation
 - pronunciation
 - JLPT
 - sentence correction
@@ -95,38 +87,37 @@ You can help with:
 - roleplay
 - free conversation
 
-IMPORTANT:
-Do NOT restrict the learner to a fixed list of topics.
+Do NOT restrict the learner to fixed topics.
 
 If the user asks something in English,
-answer their question normally.
+answer normally.
 
 If the user writes Japanese:
-- determine whether it is correct
-- explain mistakes if there are meaningful mistakes
-- give a natural alternative when useful
-- continue the conversation naturally
+- evaluate correctness
+- explain meaningful mistakes
+- give natural alternatives when useful
+- continue naturally
 
 For conversation:
+- remember recent context
 - ask a relevant follow-up question
-- remember the recent conversation
-- don't restart the conversation every turn
+- do not restart the conversation
 
 For grammar:
 - explain simply
 - give examples
 
 For translation:
-- give Japanese
-- give English meaning
+- provide Japanese
+- provide English meaning
 - explain nuance when useful
 
-Return ONLY valid JSON.
+Return ONLY a JSON object.
 
-Format:
+Required format:
 
 {
-  "reply": "main Japanese or tutor response",
+  "reply": "Japanese response",
   "english": "English explanation",
   "correction": null,
   "tip": null,
@@ -134,13 +125,11 @@ Format:
   "followUp": null
 }
 
-If the learner's Japanese can be evaluated,
-score it from 0 to 100.
+Score should be 0-100 only when the learner's Japanese can reasonably be evaluated.
 
-If it cannot reasonably be scored,
-use null.
+If a score is not appropriate, use null.
 
-Never return markdown fences.
+Do not use markdown code fences.
 `;
 
     const messages = [
@@ -156,47 +145,34 @@ Never return markdown fences.
     ];
 
     const endpoint =
-      `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/@cf/meta/llama-3.1-8b-instruct-fast`;
+      `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/@cf/meta/llama-3.1-8b-fast-v2`;
 
-    const cloudflareResponse =
-      await fetch(endpoint, {
-        method: "POST",
+    const cloudflareResponse = await fetch(endpoint, {
+      method: "POST",
 
-        headers: {
-          Authorization:
-            `Bearer ${apiToken}`,
+      headers: {
+        Authorization: `Bearer ${apiToken}`,
+        "Content-Type": "application/json"
+      },
 
-          "Content-Type":
-            "application/json"
-        },
+      body: JSON.stringify({
+        messages,
+        max_tokens: 700,
+        temperature: 0.6
+      })
+    });
 
-        body: JSON.stringify({
-          messages,
-          max_tokens: 700,
-          temperature: 0.6
-        })
-      });
+    const rawText = await cloudflareResponse.text();
 
-    const rawText =
-      await cloudflareResponse.text();
-
-    let cloudflareData = null;
+    let cloudflareData;
 
     try {
-      cloudflareData =
-        JSON.parse(rawText);
+      cloudflareData = JSON.parse(rawText);
     } catch {
-      console.error(
-        "Cloudflare returned non-JSON:",
-        rawText
-      );
-
       return res.status(502).json({
         ok: false,
-        error:
-          "Cloudflare returned an invalid response.",
-        details:
-          rawText.slice(0, 500)
+        error: "Cloudflare returned invalid JSON.",
+        details: rawText.slice(0, 500)
       });
     }
 
@@ -206,113 +182,73 @@ Never return markdown fences.
         cloudflareData
       );
 
-      const cloudflareError =
-        cloudflareData?.errors?.[0]?.message ||
-        "Cloudflare AI request failed.";
-
       return res.status(502).json({
         ok: false,
-        error: cloudflareError,
-        cloudflare: cloudflareData?.errors || []
+        error:
+          cloudflareData?.errors?.[0]?.message ||
+          "Cloudflare AI request failed."
       });
     }
 
-    const aiText =
-  cloudflareData?.result?.response;
+    /*
+      IMPORTANT:
+      Cloudflare's current response is:
 
-if (
-  typeof aiText !== "string" ||
-  !aiText.trim()
-) {
-  console.error(
-    "FULL CLOUDFLARE RESPONSE:",
-    JSON.stringify(cloudflareData, null, 2)
-  );
+      result: {
+        response: {
+          reply,
+          english,
+          correction,
+          tip,
+          score,
+          followUp
+        }
+      }
+    */
 
-  return res.status(502).json({
-    ok: false,
-    error: "Cloudflare AI returned an empty response.",
-    debug: cloudflareData
-  });
-}
-    let parsed;
-
-    try {
-      let cleaned =
-        aiText.trim();
-
-      cleaned =
-        cleaned
-          .replace(/^```json\s*/i, "")
-          .replace(/^```\s*/i, "")
-          .replace(/\s*```$/i, "")
-          .trim();
-
-      parsed =
-        JSON.parse(cleaned);
-
-    } catch {
-      console.warn(
-        "AI did not return JSON:",
-        aiText
-      );
-
-      parsed = {
-        reply: aiText,
-        english: "",
-        correction: null,
-        tip: null,
-        score: null,
-        followUp: null
-      };
-    }
-
-    let score = null;
+    const aiResponse =
+      cloudflareData?.result?.response;
 
     if (
-      parsed.score !== null &&
-      parsed.score !== undefined &&
-      !Number.isNaN(
-        Number(parsed.score)
-      )
+      !aiResponse ||
+      typeof aiResponse !== "object"
     ) {
-      score = Math.max(
-        0,
-        Math.min(
-          100,
-          Number(parsed.score)
-        )
+      console.error(
+        "Unexpected Cloudflare response:",
+        cloudflareData
       );
+
+      return res.status(502).json({
+        ok: false,
+        error: "Cloudflare AI returned an invalid response."
+      });
     }
 
     return res.status(200).json({
       ok: true,
 
       reply:
-        parsed.reply ||
-        aiText,
+        aiResponse.reply || "",
 
       japanese:
-        parsed.reply ||
-        aiText,
+        aiResponse.reply || "",
 
       english:
-        parsed.english ||
-        "",
+        aiResponse.english || "",
 
       correction:
-        parsed.correction ||
-        null,
+        aiResponse.correction || null,
 
       tip:
-        parsed.tip ||
-        null,
+        aiResponse.tip || null,
 
-      score,
+      score:
+        typeof aiResponse.score === "number"
+          ? aiResponse.score
+          : null,
 
       followUp:
-        parsed.followUp ||
-        null
+        aiResponse.followUp || null
     });
 
   } catch (error) {
