@@ -45,6 +45,7 @@ const quickPrompts = [
 
 function speak(text) {
   if (
+    typeof window === "undefined" ||
     !window.speechSynthesis ||
     !text
   ) {
@@ -58,11 +59,14 @@ function speak(text) {
 
   utterance.lang = "ja-JP";
   utterance.rate = 0.82;
+  utterance.pitch = 1;
 
-  window.speechSynthesis.speak(
-    utterance
-  );
+  window.speechSynthesis.speak(utterance);
 }
+
+/* =========================================================
+   HISTORY
+========================================================= */
 
 function historyForAPI(messages) {
   return messages
@@ -79,9 +83,221 @@ function historyForAPI(messages) {
           : "user",
 
       content:
-        message.text || "",
+        typeof message.text === "string"
+          ? message.text
+          : "",
     }));
 }
+
+/* =========================================================
+   SAFE JSON PARSER
+========================================================= */
+
+function tryParseJSON(value) {
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  let text = value.trim();
+
+  if (!text) {
+    return value;
+  }
+
+  /* Remove markdown fences */
+
+  text = text
+    .replace(/^```json\s*/i, "")
+    .replace(/^```\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return value;
+  }
+}
+
+/* =========================================================
+   EXTRACT ACTUAL AI RESPONSE
+========================================================= */
+
+function cleanAIResponse(data) {
+  let value = data;
+
+  /*
+    Possible response shapes:
+
+    {
+      reply: "...",
+      english: "..."
+    }
+
+    OR
+
+    {
+      result: {
+        reply: "...",
+        english: "..."
+      }
+    }
+
+    OR
+
+    {
+      result: {
+        response: {
+          reply: "...",
+          english: "..."
+        }
+      }
+    }
+
+    OR reply itself contains JSON string.
+  */
+
+  if (
+    value &&
+    typeof value === "object" &&
+    value.result
+  ) {
+    value = value.result;
+  }
+
+  if (
+    value &&
+    typeof value === "object" &&
+    value.response
+  ) {
+    value = value.response;
+  }
+
+  if (
+    value &&
+    typeof value === "object" &&
+    value.choices &&
+    Array.isArray(value.choices)
+  ) {
+    const choice = value.choices[0];
+
+    if (choice?.message?.content) {
+      value = choice.message.content;
+    } else if (choice?.text) {
+      value = choice.text;
+    }
+  }
+
+  /*
+    If API returned a string,
+    try to parse it.
+  */
+
+  if (typeof value === "string") {
+    const parsed = tryParseJSON(value);
+
+    if (
+      parsed &&
+      typeof parsed === "object"
+    ) {
+      value = parsed;
+    }
+  }
+
+  /*
+    Sometimes reply itself contains JSON.
+  */
+
+  if (
+    value &&
+    typeof value === "object" &&
+    typeof value.reply === "string"
+  ) {
+    const parsedReply =
+      tryParseJSON(value.reply);
+
+    if (
+      parsedReply &&
+      typeof parsedReply === "object" &&
+      (
+        parsedReply.reply ||
+        parsedReply.japanese ||
+        parsedReply.english
+      )
+    ) {
+      value = {
+        ...value,
+        ...parsedReply,
+      };
+    }
+  }
+
+  /*
+    Final normalized object
+  */
+
+  if (
+    value &&
+    typeof value === "object"
+  ) {
+    return {
+      reply:
+        typeof value.reply === "string"
+          ? value.reply.trim()
+          : typeof value.japanese === "string"
+          ? value.japanese.trim()
+          : typeof value.content === "string"
+          ? value.content.trim()
+          : "",
+
+      english:
+        typeof value.english === "string"
+          ? value.english.trim()
+          : "",
+
+      correction:
+        typeof value.correction === "string"
+          ? value.correction.trim()
+          : null,
+
+      tip:
+        typeof value.tip === "string"
+          ? value.tip.trim()
+          : null,
+
+      score:
+        typeof value.score === "number"
+          ? value.score
+          : null,
+
+      followUp:
+        typeof value.followUp === "string"
+          ? value.followUp.trim()
+          : null,
+    };
+  }
+
+  /*
+    Plain text fallback
+  */
+
+  return {
+    reply:
+      typeof value === "string"
+        ? value.trim()
+        : "",
+
+    english: "",
+    correction: null,
+    tip: null,
+    score: null,
+    followUp: null,
+  };
+}
+
+/* =========================================================
+   COMPONENT
+========================================================= */
 
 export default function Tutor() {
   const [messages, setMessages] =
@@ -104,11 +320,15 @@ export default function Tutor() {
   }, []);
 
   useEffect(() => {
-    if (chatRef.current) {
-      chatRef.current.scrollTop =
-        chatRef.current.scrollHeight;
-    }
+    if (!chatRef.current) return;
+
+    chatRef.current.scrollTop =
+      chatRef.current.scrollHeight;
   }, [messages, isThinking]);
+
+  /* =======================================================
+     ASK TUTOR
+  ======================================================= */
 
   async function askTutor(customPrompt) {
     const text =
@@ -135,98 +355,118 @@ export default function Tutor() {
     const previousMessages =
       messages;
 
-    setMessages(
-      (current) => [
-        ...current,
-        userMessage,
-      ]
-    );
+    setMessages((current) => [
+      ...current,
+      userMessage,
+    ]);
 
     setInput("");
     setIsThinking(true);
 
     try {
       const response =
-        await fetch("/api/chat", {
-          method: "POST",
+        await fetch(
+          "https://novara-ruby.vercel.app/api/chat",
+          {
+            method: "POST",
 
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
 
-          body: JSON.stringify({
-            message: cleanText,
+            body: JSON.stringify({
+              message: cleanText,
 
-            scenario:
-              "free_tutor",
+              scenario:
+                "free_tutor",
 
-            mode:
-              "tutor",
+              mode:
+                "tutor",
 
-            messages:
-              historyForAPI(
-                previousMessages
-              ),
-          }),
-        });
+              messages:
+                historyForAPI(
+                  previousMessages
+                ),
+            }),
+          }
+        );
 
-      const raw = await response.text();
+      const raw =
+        await response.text();
 
-let data;
+      let data;
 
-try {
-  data = JSON.parse(raw);
-} catch {
-  throw new Error(
-    raw || "Server returned an invalid response."
-  );
-}
-
-if (!response.ok || data.ok === false) {
-  throw new Error(
-    data.error || "AI request failed."
-  );
-}
-
-      if (!response.ok) {
+      try {
+        data =
+          JSON.parse(raw);
+      } catch {
         throw new Error(
-          data.error ||
-            "AI request failed"
+          raw ||
+            "Server returned an invalid response."
         );
       }
+
+      if (
+        !response.ok ||
+        data.ok === false
+      ) {
+        throw new Error(
+          data.error ||
+            "Novara AI request failed."
+        );
+      }
+
+      /*
+        IMPORTANT:
+        Normalize every possible
+        Cloudflare/API response.
+      */
+
+      const ai =
+        cleanAIResponse(data);
+
+      if (
+        !ai.reply ||
+        !ai.reply.trim()
+      ) {
+        throw new Error(
+          "Novara AI returned an empty response."
+        );
+      }
+
+      /*
+        Add clean AI message.
+      */
 
       setMessages(
         (current) => [
           ...current,
+
           {
             id:
               Date.now() + 1,
 
-            role: "ai",
+            role:
+              "ai",
 
             text:
-              data.reply ||
-              data.japanese ||
-              "もう一度質問してください。",
+              ai.reply,
 
             english:
-              data.english ||
-              "",
+              ai.english,
 
             correction:
-              data.correction ||
-              null,
+              ai.correction,
 
             tip:
-              data.tip ||
-              null,
+              ai.tip,
 
             score:
-              typeof data.score ===
-              "number"
-                ? data.score
-                : null,
+              ai.score,
+
+            followUp:
+              ai.followUp,
           },
         ]
       );
@@ -240,11 +480,13 @@ if (!response.ok || data.ok === false) {
       setMessages(
         (current) => [
           ...current,
+
           {
             id:
               Date.now() + 1,
 
-            role: "ai",
+            role:
+              "ai",
 
             text:
               "すみません。もう一度試してください。",
@@ -264,11 +506,17 @@ if (!response.ok || data.ok === false) {
 
       setTimeout(() => {
         inputRef.current?.focus();
-      }, 50);
+      }, 80);
     }
   }
 
+  /* =======================================================
+     CLEAR
+  ======================================================= */
+
   function clearChat() {
+    if (isThinking) return;
+
     setMessages([]);
     setInput("");
 
@@ -277,13 +525,19 @@ if (!response.ok || data.ok === false) {
     }, 50);
   }
 
+  /* =======================================================
+     UI
+  ======================================================= */
+
   return (
     <section className="page tutor-page">
 
       {/* HEADER */}
 
       <div className="page-header">
+
         <div>
+
           <div className="eyebrow">
             AI LEARNING LAB
           </div>
@@ -296,12 +550,15 @@ if (!response.ok || data.ok === false) {
             Ask Novara anything about
             Japanese.
           </p>
+
         </div>
 
         <div className="language-pill">
           🇯🇵 Japanese
         </div>
+
       </div>
+
 
       {/* QUICK PROMPTS */}
 
@@ -311,6 +568,7 @@ if (!response.ok || data.ok === false) {
           marginBottom: "18px",
         }}
       >
+
         <div className="eyebrow">
           QUICK START
         </div>
@@ -328,8 +586,10 @@ if (!response.ok || data.ok === false) {
             marginTop: "15px",
           }}
         >
+
           {quickPrompts.map(
             (item) => (
+
               <button
                 key={item.title}
                 className="secondary-button"
@@ -338,16 +598,23 @@ if (!response.ok || data.ok === false) {
                     item.prompt
                   )
                 }
-                disabled={isThinking}
+                disabled={
+                  isThinking
+                }
                 style={{
-                  textAlign: "left",
-                  padding: "13px",
+                  textAlign:
+                    "left",
+                  padding:
+                    "13px",
                 }}
               >
+
                 <div
                   style={{
-                    fontSize: "21px",
-                    marginBottom: "7px",
+                    fontSize:
+                      "21px",
+                    marginBottom:
+                      "7px",
                   }}
                 >
                   {item.icon}
@@ -359,19 +626,28 @@ if (!response.ok || data.ok === false) {
 
                 <span
                   style={{
-                    display: "block",
-                    marginTop: "4px",
-                    opacity: 0.5,
-                    fontSize: "11px",
+                    display:
+                      "block",
+                    marginTop:
+                      "4px",
+                    opacity:
+                      0.5,
+                    fontSize:
+                      "11px",
                   }}
                 >
                   Ask Novara
                 </span>
+
               </button>
+
             )
           )}
+
         </div>
+
       </div>
+
 
       {/* CHAT */}
 
@@ -379,7 +655,8 @@ if (!response.ok || data.ok === false) {
         className="question-card"
         style={{
           padding: 0,
-          overflow: "hidden",
+          overflow:
+            "hidden",
         }}
       >
 
@@ -393,26 +670,33 @@ if (!response.ok || data.ok === false) {
             display: "flex",
             justifyContent:
               "space-between",
-            alignItems: "center",
+            alignItems:
+              "center",
             gap: "10px",
           }}
         >
+
           <div
             style={{
-              display: "flex",
-              alignItems: "center",
+              display:
+                "flex",
+              alignItems:
+                "center",
               gap: "10px",
-              minWidth: 0,
             }}
           >
+
             <div
               style={{
                 width: "42px",
                 height: "42px",
                 flexShrink: 0,
-                borderRadius: "50%",
-                display: "grid",
-                placeItems: "center",
+                borderRadius:
+                  "50%",
+                display:
+                  "grid",
+                placeItems:
+                  "center",
                 background:
                   "rgba(124,92,255,.14)",
               }}
@@ -421,64 +705,91 @@ if (!response.ok || data.ok === false) {
             </div>
 
             <div>
+
               <strong>
                 Novara AI
               </strong>
 
               <div
                 style={{
-                  fontSize: "11px",
-                  opacity: 0.45,
-                  marginTop: "3px",
+                  fontSize:
+                    "11px",
+                  opacity:
+                    0.45,
+                  marginTop:
+                    "3px",
                 }}
               >
                 Japanese Tutor • Online
               </div>
+
             </div>
+
           </div>
 
           <button
             className="secondary-button"
-            onClick={clearChat}
+            onClick={
+              clearChat
+            }
+            disabled={
+              isThinking
+            }
           >
             Clear
           </button>
+
         </div>
 
-        {/* CHAT */}
+
+        {/* MESSAGES */}
 
         <div
           ref={chatRef}
           style={{
-            minHeight: "360px",
-            maxHeight: "560px",
-            overflowY: "auto",
-            padding: "16px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "14px",
+            minHeight:
+              "360px",
+            maxHeight:
+              "560px",
+            overflowY:
+              "auto",
+            padding:
+              "16px",
+            display:
+              "flex",
+            flexDirection:
+              "column",
+            gap:
+              "14px",
           }}
         >
 
           {messages.length ===
             0 && (
+
             <div
               style={{
                 minHeight:
                   "300px",
-                display: "grid",
+                display:
+                  "grid",
                 placeItems:
                   "center",
                 textAlign:
                   "center",
-                opacity: 0.6,
-                padding: "20px",
+                opacity:
+                  0.6,
+                padding:
+                  "20px",
               }}
             >
+
               <div>
+
                 <div
                   style={{
-                    fontSize: "34px",
+                    fontSize:
+                      "34px",
                     marginBottom:
                       "10px",
                   }}
@@ -496,25 +807,35 @@ if (!response.ok || data.ok === false) {
                       "13px",
                     marginTop:
                       "7px",
-                    lineHeight: 1.5,
+                    lineHeight:
+                      1.5,
                   }}
                 >
-                  Grammar, vocabulary,
+                  Grammar,
+                  vocabulary,
                   translations,
                   pronunciation,
                   JLPT or free
                   conversation.
                 </p>
+
               </div>
+
             </div>
+
           )}
+
 
           {messages.map(
             (message) => (
+
               <div
-                key={message.id}
+                key={
+                  message.id
+                }
                 style={{
-                  display: "flex",
+                  display:
+                    "flex",
                   justifyContent:
                     message.role ===
                     "user"
@@ -522,16 +843,21 @@ if (!response.ok || data.ok === false) {
                       : "flex-start",
                 }}
               >
+
                 <div
                   style={{
                     maxWidth:
                       "min(84%, 650px)",
                   }}
                 >
+
+                  {/* MESSAGE */}
+
                   <div
                     style={{
                       padding:
                         "12px 14px",
+
                       borderRadius:
                         message.role ===
                         "user"
@@ -548,6 +874,7 @@ if (!response.ok || data.ok === false) {
                         "1px solid rgba(255,255,255,.06)",
                     }}
                   >
+
                     <div
                       style={{
                         fontSize:
@@ -571,41 +898,54 @@ if (!response.ok || data.ok === false) {
                       }
                     </div>
 
+
+                    {/* ENGLISH */}
+
                     {message.english && (
                       <div
                         style={{
                           marginTop:
+                            "9px",
+                          paddingTop:
                             "8px",
-
+                          borderTop:
+                            "1px solid rgba(255,255,255,.06)",
                           fontSize:
                             "12px",
-
                           opacity:
                             0.55,
-
                           lineHeight:
                             1.5,
                         }}
                       >
+                        🇬🇧{" "}
                         {
                           message.english
                         }
                       </div>
                     )}
+
                   </div>
+
+
+                  {/* AI TOOLS */}
 
                   {message.role ===
                     "ai" && (
+
                     <div
                       style={{
-                        display: "flex",
+                        display:
+                          "flex",
                         flexWrap:
                           "wrap",
-                        gap: "7px",
+                        gap:
+                          "7px",
                         marginTop:
                           "6px",
                       }}
                     >
+
                       <button
                         className="secondary-button"
                         onClick={() =>
@@ -625,24 +965,35 @@ if (!response.ok || data.ok === false) {
 
                       {typeof message.score ===
                         "number" && (
+
                         <span
                           style={{
                             fontSize:
                               "10px",
                             opacity:
                               0.45,
+                            alignSelf:
+                              "center",
                           }}
                         >
                           Score{" "}
                           {
                             message.score
                           }
+                          /100
                         </span>
+
                       )}
+
                     </div>
+
                   )}
 
+
+                  {/* CORRECTION */}
+
                   {message.correction && (
+
                     <div
                       className="path-tip"
                       style={{
@@ -652,11 +1003,13 @@ if (!response.ok || data.ok === false) {
                           "10px",
                       }}
                     >
+
                       <span>
-                        💡
+                        ✏️
                       </span>
 
                       <div>
+
                         <strong>
                           Correction
                         </strong>
@@ -666,11 +1019,18 @@ if (!response.ok || data.ok === false) {
                             message.correction
                           }
                         </p>
+
                       </div>
+
                     </div>
+
                   )}
 
+
+                  {/* TIP */}
+
                   {message.tip && (
+
                     <div
                       style={{
                         marginTop:
@@ -679,28 +1039,68 @@ if (!response.ok || data.ok === false) {
                           "11px",
                         opacity:
                           0.55,
+                        lineHeight:
+                          1.5,
                       }}
                     >
                       💡{" "}
-                      {message.tip}
+                      {
+                        message.tip
+                      }
                     </div>
+
                   )}
+
+
+                  {/* FOLLOW UP */}
+
+                  {message.followUp && (
+
+                    <div
+                      style={{
+                        marginTop:
+                          "7px",
+                        fontSize:
+                          "12px",
+                        opacity:
+                          0.7,
+                      }}
+                    >
+                      💬{" "}
+                      {
+                        message.followUp
+                      }
+                    </div>
+
+                  )}
+
                 </div>
+
               </div>
+
             )
           )}
 
+
+          {/* THINKING */}
+
           {isThinking && (
+
             <div
               style={{
-                opacity: 0.5,
-                fontSize: "13px",
+                opacity:
+                  0.5,
+                fontSize:
+                  "13px",
               }}
             >
               ✦ Novara is thinking...
             </div>
+
           )}
+
         </div>
+
 
         {/* INPUT */}
 
@@ -710,10 +1110,13 @@ if (!response.ok || data.ok === false) {
               "12px 16px 16px",
             borderTop:
               "1px solid rgba(255,255,255,.07)",
-            display: "flex",
-            gap: "8px",
+            display:
+              "flex",
+            gap:
+              "8px",
           }}
         >
+
           <input
             ref={inputRef}
             value={input}
@@ -723,15 +1126,21 @@ if (!response.ok || data.ok === false) {
               )
             }
             onKeyDown={(event) => {
+
               if (
                 event.key ===
-                "Enter"
+                  "Enter" &&
+                !event.shiftKey
               ) {
+                event.preventDefault();
                 askTutor();
               }
+
             }}
             placeholder="Ask Novara anything..."
-            disabled={isThinking}
+            disabled={
+              isThinking
+            }
             style={{
               flex: 1,
               minWidth: 0,
@@ -743,9 +1152,12 @@ if (!response.ok || data.ok === false) {
                 "1px solid rgba(255,255,255,.1)",
               background:
                 "rgba(255,255,255,.035)",
-              color: "inherit",
-              outline: "none",
-              fontSize: "15px",
+              color:
+                "inherit",
+              outline:
+                "none",
+              fontSize:
+                "15px",
               fontFamily:
                 "inherit",
             }}
@@ -765,32 +1177,44 @@ if (!response.ok || data.ok === false) {
               ? "..."
               : "Ask →"}
           </button>
+
         </div>
+
       </div>
+
 
       {/* TIP */}
 
       <div
         className="path-tip"
         style={{
-          marginTop: "18px",
+          marginTop:
+            "18px",
         }}
       >
-        <span>🧠</span>
+
+        <span>
+          🧠
+        </span>
 
         <div>
+
           <strong>
             Learn through conversation
           </strong>
 
           <p>
             Novara can explain grammar,
-            translate sentences, correct
-            Japanese, teach vocabulary
-            and continue a conversation.
+            translate sentences,
+            correct Japanese,
+            teach vocabulary and
+            continue a conversation.
           </p>
+
         </div>
+
       </div>
+
     </section>
   );
 }
