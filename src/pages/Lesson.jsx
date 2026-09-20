@@ -1,4 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, {
+  useEffect,
+  useState,
+} from "react";
+
+import { useNovaraStore } from "../store/useNovaraStore";
 
 /* =========================================================
    NOVARA LESSON DATABASE
@@ -502,7 +507,12 @@ export default function Lesson({
   completeLesson,
   lessonId,
 }) {
+  const { state } =
+    useNovaraStore();
 
+  const activeLanguage =
+    state.activeLanguage ||
+    "Japanese";
   const activeLessonId =
     Number(lessonId) || 1;
 
@@ -608,7 +618,21 @@ export default function Lesson({
         text
       );
 
-    utterance.lang = "ja-JP";
+    const speechLanguages = {
+  Japanese: "ja-JP",
+  English: "en-US",
+  Korean: "ko-KR",
+  Spanish: "es-ES",
+  French: "fr-FR",
+  German: "de-DE",
+  Mandarin: "zh-CN",
+  Italian: "it-IT",
+};
+
+utterance.lang =
+  speechLanguages[
+    activeLanguage
+  ] || "ja-JP";
     utterance.rate = 0.8;
 
     window.speechSynthesis.speak(

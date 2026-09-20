@@ -4,46 +4,366 @@ import React, {
   useState,
 } from "react";
 
-const quickPrompts = [
-  {
-    icon: "👋",
-    title: "Greetings",
-    prompt:
-      "Teach me common Japanese greetings for beginners.",
-  },
-  {
-    icon: "🙋",
-    title: "Introduce myself",
-    prompt:
-      "Teach me how to introduce myself in Japanese.",
-  },
-  {
-    icon: "🍜",
-    title: "Food",
-    prompt:
-      "Teach me useful Japanese phrases for ordering food.",
-  },
-  {
-    icon: "🚆",
-    title: "Travel",
-    prompt:
-      "Teach me useful Japanese phrases for travelling.",
-  },
-  {
-    icon: "📚",
-    title: "Grammar",
-    prompt:
-      "Explain the difference between は and が in simple Japanese.",
-  },
-  {
-    icon: "🎯",
-    title: "JLPT N5",
-    prompt:
-      "Give me one JLPT N5 Japanese question and wait for my answer.",
-  },
-];
+import { useNovaraStore } from "../store/useNovaraStore";
 
-function speak(text) {
+const LANGUAGE_DATA = {
+  japanese: {
+    name: "Japanese",
+    flag: "🇯🇵",
+    speech: "ja-JP",
+  },
+  english: {
+    name: "English",
+    flag: "🇬🇧",
+    speech: "en-US",
+  },
+  korean: {
+    name: "Korean",
+    flag: "🇰🇷",
+    speech: "ko-KR",
+  },
+  spanish: {
+    name: "Spanish",
+    flag: "🇪🇸",
+    speech: "es-ES",
+  },
+  french: {
+    name: "French",
+    flag: "🇫🇷",
+    speech: "fr-FR",
+  },
+  german: {
+    name: "German",
+    flag: "🇩🇪",
+    speech: "de-DE",
+  },
+  mandarin: {
+    name: "Mandarin",
+    flag: "🇨🇳",
+    speech: "zh-CN",
+  },
+  italian: {
+    name: "Italian",
+    flag: "🇮🇹",
+    speech: "it-IT",
+  },
+};
+
+const QUICK_PROMPTS = {
+  japanese: [
+    {
+      icon: "👋",
+      title: "Greetings",
+      prompt:
+        "Teach me common Japanese greetings for beginners.",
+    },
+    {
+      icon: "🙋",
+      title: "Introduce myself",
+      prompt:
+        "Teach me how to introduce myself in Japanese.",
+    },
+    {
+      icon: "🍜",
+      title: "Food",
+      prompt:
+        "Teach me useful Japanese phrases for ordering food.",
+    },
+    {
+      icon: "🚆",
+      title: "Travel",
+      prompt:
+        "Teach me useful Japanese phrases for travelling.",
+    },
+    {
+      icon: "📚",
+      title: "Grammar",
+      prompt:
+        "Explain an important Japanese grammar concept for beginners.",
+    },
+    {
+      icon: "🎯",
+      title: "JLPT N5",
+      prompt:
+        "Give me one JLPT N5 Japanese question and wait for my answer.",
+    },
+  ],
+
+  english: [
+    {
+      icon: "👋",
+      title: "Greetings",
+      prompt:
+        "Teach me common English greetings for beginners.",
+    },
+    {
+      icon: "🙋",
+      title: "Introduce myself",
+      prompt:
+        "Teach me how to introduce myself in English.",
+    },
+    {
+      icon: "🍽️",
+      title: "Food",
+      prompt:
+        "Teach me useful English phrases for ordering food.",
+    },
+    {
+      icon: "✈️",
+      title: "Travel",
+      prompt:
+        "Teach me useful English phrases for travelling.",
+    },
+    {
+      icon: "📚",
+      title: "Grammar",
+      prompt:
+        "Explain an important English grammar concept for beginners.",
+    },
+    {
+      icon: "🎯",
+      title: "Practice",
+      prompt:
+        "Give me one beginner English question and wait for my answer.",
+    },
+  ],
+
+  korean: [
+    {
+      icon: "👋",
+      title: "Greetings",
+      prompt:
+        "Teach me common Korean greetings for beginners.",
+    },
+    {
+      icon: "🙋",
+      title: "Introduce myself",
+      prompt:
+        "Teach me how to introduce myself in Korean.",
+    },
+    {
+      icon: "🍜",
+      title: "Food",
+      prompt:
+        "Teach me useful Korean phrases for ordering food.",
+    },
+    {
+      icon: "🚆",
+      title: "Travel",
+      prompt:
+        "Teach me useful Korean phrases for travelling.",
+    },
+    {
+      icon: "📚",
+      title: "Grammar",
+      prompt:
+        "Explain an important Korean grammar concept for beginners.",
+    },
+    {
+      icon: "🎯",
+      title: "Practice",
+      prompt:
+        "Give me one beginner Korean question and wait for my answer.",
+    },
+  ],
+
+  spanish: [
+    {
+      icon: "👋",
+      title: "Greetings",
+      prompt:
+        "Teach me common Spanish greetings for beginners.",
+    },
+    {
+      icon: "🙋",
+      title: "Introduce myself",
+      prompt:
+        "Teach me how to introduce myself in Spanish.",
+    },
+    {
+      icon: "🍽️",
+      title: "Food",
+      prompt:
+        "Teach me useful Spanish phrases for ordering food.",
+    },
+    {
+      icon: "✈️",
+      title: "Travel",
+      prompt:
+        "Teach me useful Spanish phrases for travelling.",
+    },
+    {
+      icon: "📚",
+      title: "Grammar",
+      prompt:
+        "Explain an important Spanish grammar concept for beginners.",
+    },
+    {
+      icon: "🎯",
+      title: "Practice",
+      prompt:
+        "Give me one beginner Spanish question and wait for my answer.",
+    },
+  ],
+
+  french: [
+    {
+      icon: "👋",
+      title: "Greetings",
+      prompt:
+        "Teach me common French greetings for beginners.",
+    },
+    {
+      icon: "🙋",
+      title: "Introduce myself",
+      prompt:
+        "Teach me how to introduce myself in French.",
+    },
+    {
+      icon: "🥐",
+      title: "Food",
+      prompt:
+        "Teach me useful French phrases for ordering food.",
+    },
+    {
+      icon: "✈️",
+      title: "Travel",
+      prompt:
+        "Teach me useful French phrases for travelling.",
+    },
+    {
+      icon: "📚",
+      title: "Grammar",
+      prompt:
+        "Explain an important French grammar concept for beginners.",
+    },
+    {
+      icon: "🎯",
+      title: "Practice",
+      prompt:
+        "Give me one beginner French question and wait for my answer.",
+    },
+  ],
+
+  german: [
+    {
+      icon: "👋",
+      title: "Greetings",
+      prompt:
+        "Teach me common German greetings for beginners.",
+    },
+    {
+      icon: "🙋",
+      title: "Introduce myself",
+      prompt:
+        "Teach me how to introduce myself in German.",
+    },
+    {
+      icon: "🍽️",
+      title: "Food",
+      prompt:
+        "Teach me useful German phrases for ordering food.",
+    },
+    {
+      icon: "🚆",
+      title: "Travel",
+      prompt:
+        "Teach me useful German phrases for travelling.",
+    },
+    {
+      icon: "📚",
+      title: "Grammar",
+      prompt:
+        "Explain an important German grammar concept for beginners.",
+    },
+    {
+      icon: "🎯",
+      title: "Practice",
+      prompt:
+        "Give me one beginner German question and wait for my answer.",
+    },
+  ],
+
+  mandarin: [
+    {
+      icon: "👋",
+      title: "Greetings",
+      prompt:
+        "Teach me common Mandarin greetings for beginners.",
+    },
+    {
+      icon: "🙋",
+      title: "Introduce myself",
+      prompt:
+        "Teach me how to introduce myself in Mandarin.",
+    },
+    {
+      icon: "🍜",
+      title: "Food",
+      prompt:
+        "Teach me useful Mandarin phrases for ordering food.",
+    },
+    {
+      icon: "🚆",
+      title: "Travel",
+      prompt:
+        "Teach me useful Mandarin phrases for travelling.",
+    },
+    {
+      icon: "📚",
+      title: "Grammar",
+      prompt:
+        "Explain an important Mandarin grammar concept for beginners.",
+    },
+    {
+      icon: "🎯",
+      title: "Practice",
+      prompt:
+        "Give me one beginner Mandarin question and wait for my answer.",
+    },
+  ],
+
+  italian: [
+    {
+      icon: "👋",
+      title: "Greetings",
+      prompt:
+        "Teach me common Italian greetings for beginners.",
+    },
+    {
+      icon: "🙋",
+      title: "Introduce myself",
+      prompt:
+        "Teach me how to introduce myself in Italian.",
+    },
+    {
+      icon: "🍝",
+      title: "Food",
+      prompt:
+        "Teach me useful Italian phrases for ordering food.",
+    },
+    {
+      icon: "🚆",
+      title: "Travel",
+      prompt:
+        "Teach me useful Italian phrases for travelling.",
+    },
+    {
+      icon: "📚",
+      title: "Grammar",
+      prompt:
+        "Explain an important Italian grammar concept for beginners.",
+    },
+    {
+      icon: "🎯",
+      title: "Practice",
+      prompt:
+        "Give me one beginner Italian question and wait for my answer.",
+    },
+  ],
+};
+
+function speak(text, languageCode) {
   if (
     typeof window === "undefined" ||
     !window.speechSynthesis ||
@@ -57,16 +377,12 @@ function speak(text) {
   const utterance =
     new SpeechSynthesisUtterance(text);
 
-  utterance.lang = "ja-JP";
+  utterance.lang = languageCode;
   utterance.rate = 0.82;
   utterance.pitch = 1;
 
   window.speechSynthesis.speak(utterance);
 }
-
-/* =========================================================
-   HISTORY
-========================================================= */
 
 function historyForAPI(messages) {
   return messages
@@ -81,17 +397,12 @@ function historyForAPI(messages) {
         message.role === "ai"
           ? "assistant"
           : "user",
-
       content:
         typeof message.text === "string"
           ? message.text
           : "",
     }));
 }
-
-/* =========================================================
-   SAFE JSON PARSER
-========================================================= */
 
 function tryParseJSON(value) {
   if (typeof value !== "string") {
@@ -103,8 +414,6 @@ function tryParseJSON(value) {
   if (!text) {
     return value;
   }
-
-  /* Remove markdown fences */
 
   text = text
     .replace(/^```json\s*/i, "")
@@ -119,43 +428,8 @@ function tryParseJSON(value) {
   }
 }
 
-/* =========================================================
-   EXTRACT ACTUAL AI RESPONSE
-========================================================= */
-
 function cleanAIResponse(data) {
   let value = data;
-
-  /*
-    Possible response shapes:
-
-    {
-      reply: "...",
-      english: "..."
-    }
-
-    OR
-
-    {
-      result: {
-        reply: "...",
-        english: "..."
-      }
-    }
-
-    OR
-
-    {
-      result: {
-        response: {
-          reply: "...",
-          english: "..."
-        }
-      }
-    }
-
-    OR reply itself contains JSON string.
-  */
 
   if (
     value &&
@@ -188,11 +462,6 @@ function cleanAIResponse(data) {
     }
   }
 
-  /*
-    If API returned a string,
-    try to parse it.
-  */
-
   if (typeof value === "string") {
     const parsed = tryParseJSON(value);
 
@@ -203,10 +472,6 @@ function cleanAIResponse(data) {
       value = parsed;
     }
   }
-
-  /*
-    Sometimes reply itself contains JSON.
-  */
 
   if (
     value &&
@@ -231,10 +496,6 @@ function cleanAIResponse(data) {
       };
     }
   }
-
-  /*
-    Final normalized object
-  */
 
   if (
     value &&
@@ -277,16 +538,11 @@ function cleanAIResponse(data) {
     };
   }
 
-  /*
-    Plain text fallback
-  */
-
   return {
     reply:
       typeof value === "string"
         ? value.trim()
         : "",
-
     english: "",
     correction: null,
     tip: null,
@@ -295,11 +551,31 @@ function cleanAIResponse(data) {
   };
 }
 
-/* =========================================================
-   COMPONENT
-========================================================= */
-
 export default function Tutor() {
+  const { state } = useNovaraStore();
+
+  /*
+    Profile uses IDs like:
+    japanese, korean, spanish...
+
+    Store may contain either ID or old
+    display-name format, so normalize it.
+  */
+
+  const rawActiveLanguage =
+    state?.activeLanguage || "japanese";
+
+  const activeLanguageId =
+    String(rawActiveLanguage).toLowerCase();
+
+  const language =
+    LANGUAGE_DATA[activeLanguageId] ||
+    LANGUAGE_DATA.japanese;
+
+  const quickPrompts =
+    QUICK_PROMPTS[activeLanguageId] ||
+    QUICK_PROMPTS.japanese;
+
   const [messages, setMessages] =
     useState([]);
 
@@ -325,10 +601,6 @@ export default function Tutor() {
     chatRef.current.scrollTop =
       chatRef.current.scrollHeight;
   }, [messages, isThinking]);
-
-  /* =======================================================
-     ASK TUTOR
-  ======================================================= */
 
   async function askTutor(customPrompt) {
     const text =
@@ -384,6 +656,12 @@ export default function Tutor() {
               mode:
                 "tutor",
 
+              language:
+                language.name,
+
+              languageId:
+                activeLanguageId,
+
               messages:
                 historyForAPI(
                   previousMessages
@@ -417,12 +695,6 @@ export default function Tutor() {
         );
       }
 
-      /*
-        IMPORTANT:
-        Normalize every possible
-        Cloudflare/API response.
-      */
-
       const ai =
         cleanAIResponse(data);
 
@@ -435,42 +707,28 @@ export default function Tutor() {
         );
       }
 
-      /*
-        Add clean AI message.
-      */
-
       setMessages(
         (current) => [
           ...current,
-
           {
             id:
               Date.now() + 1,
-
-            role:
-              "ai",
-
+            role: "ai",
             text:
               ai.reply,
-
             english:
               ai.english,
-
             correction:
               ai.correction,
-
             tip:
               ai.tip,
-
             score:
               ai.score,
-
             followUp:
               ai.followUp,
           },
         ]
       );
-
     } catch (error) {
       console.error(
         "Novara Tutor Error:",
@@ -480,27 +738,19 @@ export default function Tutor() {
       setMessages(
         (current) => [
           ...current,
-
           {
             id:
               Date.now() + 1,
-
-            role:
-              "ai",
-
+            role: "ai",
             text:
-              "すみません。もう一度試してください。",
-
-            english:
-              "Sorry, I couldn't process that request.",
-
+              `Sorry, I couldn't process that request.`,
+            english: "",
             tip:
               error.message ||
               "Please try again.",
           },
         ]
       );
-
     } finally {
       setIsThinking(false);
 
@@ -509,10 +759,6 @@ export default function Tutor() {
       }, 80);
     }
   }
-
-  /* =======================================================
-     CLEAR
-  ======================================================= */
 
   function clearChat() {
     if (isThinking) return;
@@ -525,19 +771,11 @@ export default function Tutor() {
     }, 50);
   }
 
-  /* =======================================================
-     UI
-  ======================================================= */
-
   return (
     <section className="page tutor-page">
 
-      {/* HEADER */}
-
       <div className="page-header">
-
         <div>
-
           <div className="eyebrow">
             AI LEARNING LAB
           </div>
@@ -547,20 +785,16 @@ export default function Tutor() {
           </h1>
 
           <p>
-            Ask Novara anything about
-            Japanese.
+            Ask Novara anything about{" "}
+            {language.name}.
           </p>
-
         </div>
 
         <div className="language-pill">
-          🇯🇵 Japanese
+          {language.flag}{" "}
+          {language.name}
         </div>
-
       </div>
-
-
-      {/* QUICK PROMPTS */}
 
       <div
         className="question-card"
@@ -568,7 +802,6 @@ export default function Tutor() {
           marginBottom: "18px",
         }}
       >
-
         <div className="eyebrow">
           QUICK START
         </div>
@@ -586,10 +819,8 @@ export default function Tutor() {
             marginTop: "15px",
           }}
         >
-
           {quickPrompts.map(
             (item) => (
-
               <button
                 key={item.title}
                 className="secondary-button"
@@ -598,9 +829,7 @@ export default function Tutor() {
                     item.prompt
                   )
                 }
-                disabled={
-                  isThinking
-                }
+                disabled={isThinking}
                 style={{
                   textAlign:
                     "left",
@@ -608,7 +837,6 @@ export default function Tutor() {
                     "13px",
                 }}
               >
-
                 <div
                   style={{
                     fontSize:
@@ -638,30 +866,19 @@ export default function Tutor() {
                 >
                   Ask Novara
                 </span>
-
               </button>
-
             )
           )}
-
         </div>
-
       </div>
-
-
-      {/* CHAT */}
 
       <div
         className="question-card"
         style={{
           padding: 0,
-          overflow:
-            "hidden",
+          overflow: "hidden",
         }}
       >
-
-        {/* CHAT HEADER */}
-
         <div
           style={{
             padding: "16px",
@@ -670,22 +887,18 @@ export default function Tutor() {
             display: "flex",
             justifyContent:
               "space-between",
-            alignItems:
-              "center",
+            alignItems: "center",
             gap: "10px",
           }}
         >
-
           <div
             style={{
-              display:
-                "flex",
+              display: "flex",
               alignItems:
                 "center",
               gap: "10px",
             }}
           >
-
             <div
               style={{
                 width: "42px",
@@ -693,8 +906,7 @@ export default function Tutor() {
                 flexShrink: 0,
                 borderRadius:
                   "50%",
-                display:
-                  "grid",
+                display: "grid",
                 placeItems:
                   "center",
                 background:
@@ -705,7 +917,6 @@ export default function Tutor() {
             </div>
 
             <div>
-
               <strong>
                 Novara AI
               </strong>
@@ -720,29 +931,19 @@ export default function Tutor() {
                     "3px",
                 }}
               >
-                Japanese Tutor • Online
+                {language.name} Tutor • Online
               </div>
-
             </div>
-
           </div>
 
           <button
             className="secondary-button"
-            onClick={
-              clearChat
-            }
-            disabled={
-              isThinking
-            }
+            onClick={clearChat}
+            disabled={isThinking}
           >
             Clear
           </button>
-
         </div>
-
-
-        {/* MESSAGES */}
 
         <div
           ref={chatRef}
@@ -763,10 +964,7 @@ export default function Tutor() {
               "14px",
           }}
         >
-
-          {messages.length ===
-            0 && (
-
+          {messages.length === 0 && (
             <div
               style={{
                 minHeight:
@@ -783,9 +981,7 @@ export default function Tutor() {
                   "20px",
               }}
             >
-
               <div>
-
                 <div
                   style={{
                     fontSize:
@@ -811,24 +1007,18 @@ export default function Tutor() {
                       1.5,
                   }}
                 >
-                  Grammar,
-                  vocabulary,
+                  Grammar, vocabulary,
                   translations,
                   pronunciation,
-                  JLPT or free
+                  practice or free
                   conversation.
                 </p>
-
               </div>
-
             </div>
-
           )}
-
 
           {messages.map(
             (message) => (
-
               <div
                 key={
                   message.id
@@ -843,38 +1033,30 @@ export default function Tutor() {
                       : "flex-start",
                 }}
               >
-
                 <div
                   style={{
                     maxWidth:
                       "min(84%, 650px)",
                   }}
                 >
-
-                  {/* MESSAGE */}
-
                   <div
                     style={{
                       padding:
                         "12px 14px",
-
                       borderRadius:
                         message.role ===
                         "user"
                           ? "16px 16px 4px 16px"
                           : "16px 16px 16px 4px",
-
                       background:
                         message.role ===
                         "user"
                           ? "rgba(124,92,255,.16)"
                           : "rgba(255,255,255,.045)",
-
                       border:
                         "1px solid rgba(255,255,255,.06)",
                     }}
                   >
-
                     <div
                       style={{
                         fontSize:
@@ -882,13 +1064,10 @@ export default function Tutor() {
                           "user"
                             ? "15px"
                             : "17px",
-
                         lineHeight:
                           1.55,
-
                         whiteSpace:
                           "pre-wrap",
-
                         wordBreak:
                           "break-word",
                       }}
@@ -897,9 +1076,6 @@ export default function Tutor() {
                         message.text
                       }
                     </div>
-
-
-                    {/* ENGLISH */}
 
                     {message.english && (
                       <div
@@ -924,15 +1100,10 @@ export default function Tutor() {
                         }
                       </div>
                     )}
-
                   </div>
-
-
-                  {/* AI TOOLS */}
 
                   {message.role ===
                     "ai" && (
-
                     <div
                       style={{
                         display:
@@ -945,12 +1116,12 @@ export default function Tutor() {
                           "6px",
                       }}
                     >
-
                       <button
                         className="secondary-button"
                         onClick={() =>
                           speak(
-                            message.text
+                            message.text,
+                            language.speech
                           )
                         }
                         style={{
@@ -965,7 +1136,6 @@ export default function Tutor() {
 
                       {typeof message.score ===
                         "number" && (
-
                         <span
                           style={{
                             fontSize:
@@ -982,18 +1152,11 @@ export default function Tutor() {
                           }
                           /100
                         </span>
-
                       )}
-
                     </div>
-
                   )}
 
-
-                  {/* CORRECTION */}
-
                   {message.correction && (
-
                     <div
                       className="path-tip"
                       style={{
@@ -1003,13 +1166,11 @@ export default function Tutor() {
                           "10px",
                       }}
                     >
-
                       <span>
                         ✏️
                       </span>
 
                       <div>
-
                         <strong>
                           Correction
                         </strong>
@@ -1019,18 +1180,11 @@ export default function Tutor() {
                             message.correction
                           }
                         </p>
-
                       </div>
-
                     </div>
-
                   )}
 
-
-                  {/* TIP */}
-
                   {message.tip && (
-
                     <div
                       style={{
                         marginTop:
@@ -1048,14 +1202,9 @@ export default function Tutor() {
                         message.tip
                       }
                     </div>
-
                   )}
 
-
-                  {/* FOLLOW UP */}
-
                   {message.followUp && (
-
                     <div
                       style={{
                         marginTop:
@@ -1071,21 +1220,13 @@ export default function Tutor() {
                         message.followUp
                       }
                     </div>
-
                   )}
-
                 </div>
-
               </div>
-
             )
           )}
 
-
-          {/* THINKING */}
-
           {isThinking && (
-
             <div
               style={{
                 opacity:
@@ -1096,13 +1237,8 @@ export default function Tutor() {
             >
               ✦ Novara is thinking...
             </div>
-
           )}
-
         </div>
-
-
-        {/* INPUT */}
 
         <div
           style={{
@@ -1116,7 +1252,6 @@ export default function Tutor() {
               "8px",
           }}
         >
-
           <input
             ref={inputRef}
             value={input}
@@ -1126,7 +1261,6 @@ export default function Tutor() {
               )
             }
             onKeyDown={(event) => {
-
               if (
                 event.key ===
                   "Enter" &&
@@ -1135,9 +1269,8 @@ export default function Tutor() {
                 event.preventDefault();
                 askTutor();
               }
-
             }}
-            placeholder="Ask Novara anything..."
+            placeholder={`Ask Novara about ${language.name}...`}
             disabled={
               isThinking
             }
@@ -1177,13 +1310,8 @@ export default function Tutor() {
               ? "..."
               : "Ask →"}
           </button>
-
         </div>
-
       </div>
-
-
-      {/* TIP */}
 
       <div
         className="path-tip"
@@ -1192,27 +1320,22 @@ export default function Tutor() {
             "18px",
         }}
       >
-
         <span>
           🧠
         </span>
 
         <div>
-
           <strong>
             Learn through conversation
           </strong>
 
           <p>
-            Novara can explain grammar,
-            translate sentences,
-            correct Japanese,
-            teach vocabulary and
-            continue a conversation.
+            Novara is currently teaching{" "}
+            {language.name}. Change your
+            active language from Profile
+            to switch the Tutor.
           </p>
-
         </div>
-
       </div>
 
     </section>

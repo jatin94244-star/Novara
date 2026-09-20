@@ -12,34 +12,46 @@ import Vocabulary from "./pages/Vocabulary";
 import Analytics from "./pages/Analytics";
 import SimplePage from "./pages/SimplePage";
 import Grammar from "./pages/Grammar";
+import Profile from "./pages/profile";
+
 import { useNovaraStore } from "./store/useNovaraStore";
 
 export default function App() {
-  const [page, setPage] = useState("home");
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [page, setPage] =
+    useState("home");
 
-  // Currently selected lesson
-  const [lessonId, setLessonId] = useState(2);
+  const [mobileOpen, setMobileOpen] =
+    useState(false);
+
+  const [lessonId, setLessonId] =
+    useState(2);
 
   const {
     state,
     addXP,
     completeLesson,
+    updateProfile,
+    setLanguages,
+    addLanguage,
+    removeLanguage,
+    setActiveLanguage,
   } = useNovaraStore();
 
-  const openLesson = (id) => {
+  function openLesson(id) {
     setLessonId(id);
     setPage("lesson");
-  };
+  }
 
-  const renderPage = () => {
+  function renderPage() {
     switch (page) {
       case "home":
         return (
           <Home
             state={state}
             setPage={setPage}
-            completeLesson={completeLesson}
+            completeLesson={
+              completeLesson
+            }
             addXP={addXP}
           />
         );
@@ -57,23 +69,41 @@ export default function App() {
         return (
           <Lesson
             setPage={setPage}
-            completeLesson={completeLesson}
+            completeLesson={
+              completeLesson
+            }
             lessonId={lessonId}
           />
         );
 
       case "tutor":
-        return <Tutor state={state} />;
-case "grammar":
-  return <Grammar />;
+        return (
+          <Tutor state={state} />
+        );
+
       case "conversation":
-        return <Conversation />;
+        return (
+          <Conversation
+            state={state}
+          />
+        );
 
       case "vocab":
-        return <Vocabulary addXP={addXP} />;
+        return (
+          <Vocabulary
+            addXP={addXP}
+          />
+        );
 
       case "analytics":
-        return <Analytics state={state} />;
+        return (
+          <Analytics
+            state={state}
+          />
+        );
+
+      case "grammar":
+        return <Grammar />;
 
       case "achievements":
         return (
@@ -85,9 +115,23 @@ case "grammar":
 
       case "profile":
         return (
-          <SimplePage
-            type="profile"
+          <Profile
             state={state}
+            updateProfile={
+              updateProfile
+            }
+            setLanguages={
+              setLanguages
+            }
+            addLanguage={
+              addLanguage
+            }
+            removeLanguage={
+              removeLanguage
+            }
+            setActiveLanguage={
+              setActiveLanguage
+            }
           />
         );
 
@@ -104,34 +148,36 @@ case "grammar":
           <Home
             state={state}
             setPage={setPage}
-            completeLesson={completeLesson}
+            completeLesson={
+              completeLesson
+            }
             addXP={addXP}
           />
         );
     }
-  };
+  }
 
   return (
     <div className="app">
-
       <Sidebar
         page={page}
         setPage={setPage}
         mobileOpen={mobileOpen}
-        setMobileOpen={setMobileOpen}
+        setMobileOpen={
+          setMobileOpen
+        }
       />
 
       <main className="main">
-
         <Topbar
-          setMobileOpen={setMobileOpen}
+          setMobileOpen={
+            setMobileOpen
+          }
           state={state}
         />
 
         {renderPage()}
-
       </main>
-
     </div>
   );
 }
